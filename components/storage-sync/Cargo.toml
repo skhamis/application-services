@@ -1,0 +1,35 @@
+[package]
+name = "storage-sync"
+edition = "2018"
+version = "0.1.0"
+authors = ["application-services@mozilla.com"]
+license = "MPL-2.0"
+
+[dependencies]
+error-support = { path = "../support/error" }
+failure = "0.1.6"
+ffi-support = { path = "../support/ffi" }
+interrupt = { path = "../support/interrupt" }
+lazy_static = "1.4.0"
+log = "0.4"
+serde = "1.0.104"
+serde_json = "1.0.44"
+sql-support = { path = "../support/sql" }
+sync15 = { path = "../sync15" }
+sync-guid = { path = "../support/guid", features = ["rusqlite_support", "random"]}
+url = { version = "2.1.1", features = ["serde"] }
+
+[dependencies.rusqlite]
+version = "0.21.0"
+features = ["functions", "bundled"]
+
+[dev-dependencies]
+more-asserts = "0.2.1"
+env_logger = "0.7.0"
+tempfile = "3.0.8"
+fxa-client = { path = "../fxa-client" }
+tempdir = "0.3.7"
+cli-support = { path = "../support/cli" }
+pretty_assertions = "0.6.1"
+force-viaduct-reqwest = { path = "../support/force-viaduct-reqwest" }
+ctrlc = "3.1.4"

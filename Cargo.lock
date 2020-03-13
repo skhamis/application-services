@@ -2330,6 +2330,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "storage-sync"
+version = "0.1.0"
+dependencies = [
+ "cli-support",
+ "ctrlc",
+ "env_logger",
+ "error-support",
+ "failure",
+ "ffi-support",
+ "force-viaduct-reqwest",
+ "fxa-client",
+ "interrupt",
+ "lazy_static",
+ "log",
+ "more-asserts",
+ "pretty_assertions",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sql-support",
+ "sync-guid",
+ "sync15",
+ "tempdir",
+ "tempfile",
+ "url",
+]
+
+[[package]]
 name = "strsim"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
