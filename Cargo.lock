@@ -2330,34 +2330,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "storage-sync"
-version = "0.1.0"
-dependencies = [
- "cli-support",
- "ctrlc",
- "env_logger",
- "error-support",
- "failure",
- "ffi-support",
- "force-viaduct-reqwest",
- "fxa-client",
- "interrupt",
- "lazy_static",
- "log",
- "more-asserts",
- "pretty_assertions",
- "rusqlite",
- "serde",
- "serde_json",
- "sql-support",
- "sync-guid",
- "sync15",
- "tempdir",
- "tempfile",
- "url",
-]
-
-[[package]]
 name = "strsim"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2953,6 +2925,34 @@ checksum = "97d468a911faaaeb783693b004e1c62e0063e646b0afae5c146cd144e566e66d"
 dependencies = [
  "widestring",
  "winapi 0.3.8",
+]
+
+[[package]]
+name = "webext-storage"
+version = "0.1.0"
+dependencies = [
+ "cli-support",
+ "ctrlc",
+ "env_logger",
+ "error-support",
+ "failure",
+ "ffi-support",
+ "force-viaduct-reqwest",
+ "fxa-client",
+ "interrupt",
+ "lazy_static",
+ "log",
+ "more-asserts",
+ "pretty_assertions",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sql-support",
+ "sync-guid",
+ "sync15",
+ "tempdir",
+ "tempfile",
+ "url",
 ]
 
 [[package]]

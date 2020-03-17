@@ -1,5 +1,5 @@
 [package]
-name = "storage-sync"
+name = "webext-storage"
 edition = "2018"
 version = "0.1.0"
 authors = ["application-services@mozilla.com"]
