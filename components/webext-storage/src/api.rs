@@ -49,13 +49,20 @@ fn remove_from_db(conn: &StorageConn, ext_guid: &str) -> Result<()> {
     Ok(())
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StorageChange {
+    #[serde(skip_serializing_if = "Option::is_none")]
     old_value: Option<JsonValue>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     new_value: Option<JsonValue>,
 }
 
 // XXX - TODO - enforce quotas!
+// XXX - the shape of StorageChange is wrong! Instead of, say:
+//  {oldValue: {foo: "old"}, newValue: {foo: "new"}}
+// it should be:
+//  {foo: {oldValue: "old", newValue: "new"}}
 pub fn set(conn: &StorageConn, ext_guid: &str, val: JsonValue) -> Result<StorageChange> {
     // XXX - Should we consider making this function  take a &str, and parse
     // it ourselves? That way we could avoid parsing entirely if no existing
