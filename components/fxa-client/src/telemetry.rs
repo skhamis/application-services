@@ -17,7 +17,7 @@ impl FirefoxAccount {
     /// forgivingly (eg, be tolerant of things not existing) to try and avoid
     /// too many changes as telemetry comes and goes.
     pub fn gather_telemetry(&mut self) -> Result<String> {
-        let telem = self.telemetry.replace(FxaTelemetry::new());
+        let telem = self.telemetry.replace(telemetry_impl::FxaTelemetry::new());
         Ok(serde_json::to_string(&telem)?)
     }
 }
@@ -65,34 +65,91 @@ pub struct ReceivedCommand {
     pub reason: ReceivedReason,
 }
 
-// We have a naive strategy to avoid unbounded memory growth - the intention
-// is that if any platform lets things grow to hit these limits, it's probably
-// never going to consume anything - so it doesn't matter what we discard (ie,
-// there's no good reason to have a smarter circular buffer etc)
-const MAX_TAB_EVENTS: usize = 200;
+#[cfg(not(feature = "glean_telemetry"))]
+mod telemetry_impl {
+    use super::*;
 
-#[derive(Debug, Default, Serialize)]
-pub struct FxaTelemetry {
-    commands_sent: Vec<SentCommand>,
-    commands_received: Vec<ReceivedCommand>,
+    // We have a naive strategy to avoid unbounded memory growth - the intention
+    // is that if any platform lets things grow to hit these limits, it's probably
+    // never going to consume anything - so it doesn't matter what we discard (ie,
+    // there's no good reason to have a smarter circular buffer etc)
+    const MAX_TAB_EVENTS: usize = 200;
+
+    #[derive(Debug, Default, Serialize)]
+    pub struct FxaTelemetry {
+        commands_sent: Vec<SentCommand>,
+        commands_received: Vec<ReceivedCommand>,
+    }
+
+    impl FxaTelemetry {
+        pub fn new() -> Self {
+            FxaTelemetry {
+                ..Default::default()
+            }
+        }
+
+        pub fn record_tab_sent(&mut self, sent: SentCommand) {
+            if self.commands_sent.len() < MAX_TAB_EVENTS {
+                self.commands_sent.push(sent);
+            }
+        }
+
+        pub fn record_tab_received(&mut self, recd: ReceivedCommand) {
+            if self.commands_received.len() < MAX_TAB_EVENTS {
+                self.commands_received.push(recd);
+            }
+        }
+    }
 }
 
-impl FxaTelemetry {
-    pub fn new() -> Self {
-        FxaTelemetry {
-            ..Default::default()
+#[cfg(feature = "glean_telemetry")]
+mod telemetry_impl {
+    use super::*;
+    use glean::{private::EventMetric, CommonMetricData, Lifetime};
+    use glean_core;
+    use std::collections::HashMap;
+
+    #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+    enum TabsKeys {
+        FlowId,
+        StreamId,
+    }
+
+    impl glean_core::traits::ExtraKeys for TabsKeys {
+        const ALLOWED_KEYS: &'static [&'static str] = &["flow_id", "stream_id"];
+
+        fn index(self) -> i32 {
+            self as i32
         }
     }
 
-    pub fn record_tab_sent(&mut self, sent: SentCommand) {
-        if self.commands_sent.len() < MAX_TAB_EVENTS {
-            self.commands_sent.push(sent);
-        }
-    }
+    #[derive(Debug, Default, Serialize)]
+    pub struct FxaTelemetry {}
 
-    pub fn record_tab_received(&mut self, recd: ReceivedCommand) {
-        if self.commands_received.len() < MAX_TAB_EVENTS {
-            self.commands_received.push(recd);
+    impl FxaTelemetry {
+        pub fn new() -> Self {
+            Self {}
+        }
+
+        pub fn record_tab_sent(&mut self, sent: SentCommand) {
+            let event: EventMetric<TabsKeys> = EventMetric::new(CommonMetricData {
+                name: "sent".into(),
+                category: "test.metrics".into(), // ???
+                send_in_pings: vec!["sync".into()],
+                disabled: false,
+                lifetime: Lifetime::Ping,
+                ..Default::default()
+            });
+            let mut keys = HashMap::new();
+            keys.insert(TabsKeys::FlowId, sent.flow_id);
+            keys.insert(TabsKeys::StreamId, sent.stream_id);
+            event.record(keys);
+        }
+
+        pub fn record_tab_received(&mut self, _recd: ReceivedCommand) {
+            // TODO!
         }
     }
 }
+
+pub use telemetry_impl::FxaTelemetry;

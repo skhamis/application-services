@@ -28,6 +28,8 @@ error-support = { path = "../support/error" }
 thiserror = "1.0"
 anyhow = "1.0"
 sync-guid = { path = "../support/guid", features = ["random"] }
+glean = { path = "../../../glean/glean-core/rlb", optional = true}
+glean-core = { path = "../../../glean/glean-core", optional = true}
 
 [dev-dependencies]
 viaduct-reqwest = { path = "../support/viaduct-reqwest" }
@@ -35,6 +37,7 @@ mockiato = "0.9"
 mockito = "0.27"
 
 [features]
-default = []
+default = ["glean_telemetry"]
+glean_telemetry = ["glean", "glean-core"]
 gecko = [ "rc_crypto/gecko" ]
 integration_test = []
