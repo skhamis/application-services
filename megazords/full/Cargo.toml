@@ -16,7 +16,10 @@ push-ffi = { path = "../../components/push/ffi" }
 rc_log_ffi = { path = "../../components/rc_log" }
 viaduct = { path = "../../components/viaduct" }
 sync_manager_ffi = { path = "../../components/sync_manager/ffi" }
-nimbus-sdk = { path = "../../components/external/nimbus-sdk/nimbus" }
 autofill = { path = "../../components/autofill" }
+
+nimbus-sdk = { path = "../../components/external/nimbus-sdk/nimbus" }
+glean-core = { path = "../../components/external/glean/glean-core" }
+glean-ffi = { path = "../../components/external/glean/glean-core/ffi" }
 
 lazy_static = "1.4"

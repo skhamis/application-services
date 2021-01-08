@@ -1,0 +1,44 @@
+diff --git gradle-plugin/src/main/groovy/mozilla/telemetry/glean-gradle-plugin/GleanGradlePlugin.groovy gradle-plugin/src/main/groovy/mozilla/telemetry/glean-gradle-plugin/GleanGradlePlugin.groovy
+index f860f538b..b7750b961 100644
+--- gradle-plugin/src/main/groovy/mozilla/telemetry/glean-gradle-plugin/GleanGradlePlugin.groovy
++++ gradle-plugin/src/main/groovy/mozilla/telemetry/glean-gradle-plugin/GleanGradlePlugin.groovy
+@@ -115,8 +115,10 @@ except:
+      */
+     static def getYamlFiles(Project project) {
+         if (project.ext.has("gleanYamlFiles")) {
++            project.logger.lifecycle("Glean SDK - has YAML files defined - ${project.ext.gleanYamlFiles}")
+             return project.ext.gleanYamlFiles
+         } else {
++            project.logger.lifecycle("Glean SDK - using default YAML files")
+             return [
+                 "${project.projectDir}/metrics.yaml",
+                 "${project.projectDir}/pings.yaml"
+@@ -155,6 +157,7 @@ except:
+                 // into `arg`s later.
+                 for (String item : getYamlFiles(project)) {
+                     if (project.file(item).exists()) {
++                        project.logger.lifecycle("generateKotlinAPI doing generation of ${item}")
+                         inputs.file item
+                     }
+                 }
+@@ -167,7 +170,11 @@ except:
+                 def gleanNamespace = "mozilla.components.service.glean"
+                 if (project.ext.has("gleanNamespace")) {
+                     gleanNamespace = project.ext.get("gleanNamespace")
++                    project.logger.lifecycle("namespace now ${gleanNamespace}")
+                 }
++                project.logger.lifecycle("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX NAMESPACE ${gleanNamespace}")
++                project.logger.lifecycle("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX full NAMESPACE $fullNamespace")
++                fullNamespace = "mozilla.telemetry.glean.GleanMetrics"
+ 
+                 args "-c"
+                 args runPythonScript
+@@ -196,7 +203,7 @@ except:
+                     // Add the potential 'metrics.yaml' files at evaluation-time, rather than
+                     // configuration-time. Otherwise the Gradle build will fail.
+                     inputs.files.forEach { file ->
+-                        project.logger.lifecycle("Glean SDK - generating API from ${file.path}")
++                        project.logger.lifecycle("Glean SDK - generating API from ${file.path} to ${sourceOutputDir}")
+                         args file.path
+                     }
+                 }

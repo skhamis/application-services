@@ -78,6 +78,13 @@ projects:
     - name: tabs
       type: aar
     description: Sync 1.5 remote tabs implementation.
+  glean:
+    path: components/glean
+    artifactId: glean
+    publications:
+    - name: glean
+      type: aar
+    description: The Glean SDK, compiled to work with the Application Services full-megazord.
   nimbus:
     path: components/nimbus
     artifactId: nimbus
