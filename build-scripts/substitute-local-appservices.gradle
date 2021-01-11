@@ -26,7 +26,7 @@ configurations.all { config ->
                     // formatted like `0.0.1-SNAPSHOT-*`. This syntax will pick the latest such version
                     // published locally by the `autoPublishForLocalDevelopment` command.
                     def group = dependency.requested.group
-                    if (group == 'org.mozilla.appservices') {
+                    if (group == 'org.mozilla.appservices' || group == 'org.mozilla.telemetry') {
                         def name = dependency.requested.module
                         dependency.useTarget([group: group, name: name, version: '0.0.1-SNAPSHOT-+'])
                     }
