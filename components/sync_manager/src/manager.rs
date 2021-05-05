@@ -5,7 +5,6 @@
 use crate::error::*;
 use crate::msg_types::{DeviceType, ServiceStatus, SyncParams, SyncReason, SyncResult};
 use crate::{reset, reset_all, wipe};
-use logins::PasswordStore;
 use places::{
     bookmark_sync::engine::BookmarksEngine, history_sync::engine::HistoryEngine, PlacesApi,
 };
@@ -40,7 +39,6 @@ const DEVICE_TYPE_TV: i32 = DeviceType::Tv as i32;
 pub struct SyncManager {
     mem_cached_state: Option<MemoryCachedState>,
     places: Weak<PlacesApi>,
-    logins: Weak<Mutex<PasswordStore>>,
     tabs: Weak<Mutex<TabsStore>>,
 }
 
@@ -55,7 +53,6 @@ impl SyncManager {
         Self {
             mem_cached_state: None,
             places: Weak::new(),
-            logins: Weak::new(),
             tabs: Weak::new(),
         }
     }
@@ -64,33 +61,42 @@ impl SyncManager {
         self.places = Arc::downgrade(&places);
     }
 
-    pub fn set_logins(&mut self, logins: Arc<Mutex<PasswordStore>>) {
-        self.logins = Arc::downgrade(&logins);
-    }
-
     pub fn set_tabs(&mut self, tabs: Arc<Mutex<TabsStore>>) {
         self.tabs = Arc::downgrade(&tabs);
     }
 
-    pub fn autofill_engine(engine: &str) -> Option<Box<dyn SyncEngine>> {
-        autofill::get_registered_sync_engine(engine)
+    // Newer engines have a singleton "imported" via crate interdependencies,
+    // all which follow the same basic pattern, so handle them all here.
+    fn imported_engine(engine: &str) -> Option<Box<dyn SyncEngine>> {
+        match engine {
+            "addresses" | "creditcards" => {
+                let cell = autofill::STORE_FOR_MANAGER.lock().unwrap();
+                // The cell holds a `Weak` - borrow it (which is safe as we have the
+                // mutex) and upgrade it to a real Arc.
+                let weak = cell.borrow();
+                match weak.upgrade() {
+                    None => None,
+                    Some(arc) => Some(match engine {
+                        "addresses" => Box::new(autofill::sync::address::create_engine(arc)),
+                        "creditcards" => Box::new(autofill::sync::credit_card::create_engine(arc)),
+                        _ => unreachable!(),
+                    }),
+                }
+            }
+            "logins" => {
+                let cell = logins::STORE_FOR_MANAGER.lock().unwrap();
+                let weak = cell.borrow();
+                match weak.upgrade() {
+                    None => None,
+                    Some(arc) => Some(Box::new(logins::LoginsSyncEngine::new(Arc::clone(&arc)))),
+                }
+            }
+            _ => unreachable!("no engine {}", engine),
+        }
     }
 
     pub fn wipe(&mut self, engine: &str) -> Result<()> {
         match engine {
-            "logins" => {
-                if let Some(logins) = self
-                    .logins
-                    .upgrade()
-                    .as_ref()
-                    .map(|l| l.lock().expect("poisoned logins mutex"))
-                {
-                    logins.wipe()?;
-                    Ok(())
-                } else {
-                    Err(ErrorKind::ConnectionClosed(engine.into()).into())
-                }
-            }
             "bookmarks" => {
                 if let Some(places) = self.places.upgrade() {
                     places.wipe_bookmarks()?;
@@ -107,8 +113,8 @@ impl SyncManager {
                     Err(ErrorKind::ConnectionClosed(engine.into()).into())
                 }
             }
-            "addresses" | "creditcards" => {
-                if let Some(engine) = Self::autofill_engine(engine) {
+            "addresses" | "creditcards" | "logins" => {
+                if let Some(engine) = Self::imported_engine(engine) {
                     engine.wipe()?;
                 }
                 Ok(())
@@ -119,19 +125,6 @@ impl SyncManager {
 
     pub fn reset(&mut self, engine: &str) -> Result<()> {
         match engine {
-            "logins" => {
-                if let Some(logins) = self
-                    .logins
-                    .upgrade()
-                    .as_ref()
-                    .map(|l| l.lock().expect("poisoned logins mutex"))
-                {
-                    logins.reset()?;
-                    Ok(())
-                } else {
-                    Err(ErrorKind::ConnectionClosed(engine.into()).into())
-                }
-            }
             "bookmarks" | "history" => {
                 if let Some(places) = self.places.upgrade() {
                     if engine == "bookmarks" {
@@ -144,8 +137,8 @@ impl SyncManager {
                     Err(ErrorKind::ConnectionClosed(engine.into()).into())
                 }
             }
-            "addresses" | "creditcards" => {
-                if let Some(engine) = Self::autofill_engine(engine) {
+            "addresses" | "creditcards" | "logins" => {
+                if let Some(engine) = Self::imported_engine(engine) {
                     engine.reset(&EngineSyncAssociation::Disconnected)?;
                 }
                 Ok(())
@@ -155,41 +148,19 @@ impl SyncManager {
     }
 
     pub fn reset_all(&mut self) -> Result<()> {
-        if let Some(logins) = self
-            .logins
-            .upgrade()
-            .as_ref()
-            .map(|l| l.lock().expect("poisoned logins mutex"))
-        {
-            logins.reset()?;
-        }
         if let Some(places) = self.places.upgrade() {
             places.reset_bookmarks()?;
             places.reset_history()?;
         }
-        if let Some(addresses) = Self::autofill_engine("addresses") {
-            addresses.reset(&EngineSyncAssociation::Disconnected)?;
-        }
-        if let Some(credit_cards) = Self::autofill_engine("creditcards") {
-            credit_cards.reset(&EngineSyncAssociation::Disconnected)?;
+        for name in &["addresses", "creditcards", "logins"] {
+            if let Some(engine) = Self::imported_engine(name) {
+                engine.reset(&EngineSyncAssociation::Disconnected)?;
+            }
         }
         Ok(())
     }
 
     pub fn disconnect(&mut self) {
-        if let Some(logins) = self
-            .logins
-            .upgrade()
-            .as_ref()
-            .map(|l| l.lock().expect("poisoned logins mutex"))
-        {
-            if let Err(e) = logins.reset() {
-                log::error!("Failed to reset logins: {}", e);
-            }
-        } else {
-            log::warn!("Unable to reset logins, be sure to call set_logins before disconnect if this is surprising");
-        }
-
         if let Some(places) = self.places.upgrade() {
             if let Err(e) = places.reset_bookmarks() {
                 log::error!("Failed to reset bookmarks: {}", e);
@@ -200,19 +171,12 @@ impl SyncManager {
         } else {
             log::warn!("Unable to reset places, be sure to call set_places before disconnect if this is surprising");
         }
-        if let Some(addresses) = Self::autofill_engine("addresses") {
-            if let Err(e) = addresses.reset(&EngineSyncAssociation::Disconnected) {
-                log::error!("Failed to reset addresses: {}", e);
+        for name in &["addresses", "creditcards", "logins"] {
+            if let Some(engine) = Self::imported_engine(name) {
+                if let Err(e) = engine.reset(&EngineSyncAssociation::Disconnected) {
+                    log::warn!("Failed to reset {}: {}", name, e);
+                }
             }
-        } else {
-            log::warn!("Unable to reset addresses, be sure to call register_with_sync_manager before disconnect if this is surprising");
-        }
-        if let Some(credit_cards) = Self::autofill_engine("creditcards") {
-            if let Err(e) = credit_cards.reset(&EngineSyncAssociation::Disconnected) {
-                log::error!("Failed to reset credit cards: {}", e);
-            }
-        } else {
-            log::warn!("Unable to reset credit cards, be sure to call register_with_sync_manager before disconnect if this is surprising");
         }
     }
 
@@ -220,9 +184,9 @@ impl SyncManager {
         let mut have_engines = vec![];
         let places = self.places.upgrade();
         let tabs = self.tabs.upgrade();
-        let logins = self.logins.upgrade();
-        let addresses = Self::autofill_engine("addresses");
-        let credit_cards = Self::autofill_engine("creditcards");
+        let logins = Self::imported_engine("logins");
+        let addresses = Self::imported_engine("addresses");
+        let credit_cards = Self::imported_engine("creditcards");
         if places.is_some() {
             have_engines.push(HISTORY_ENGINE);
             have_engines.push(BOOKMARKS_ENGINE);
@@ -269,10 +233,10 @@ impl SyncManager {
 
     fn do_sync(&mut self, mut params: SyncParams) -> Result<SyncResult> {
         let mut places = self.places.upgrade();
-        let logins = self.logins.upgrade();
         let tabs = self.tabs.upgrade();
-        let addresses = Self::autofill_engine("addresses");
-        let credit_cards = Self::autofill_engine("creditcards");
+        let logins = Self::imported_engine("logins");
+        let addresses = Self::imported_engine("addresses");
+        let credit_cards = Self::imported_engine("creditcards");
 
         let key_bundle = sync15::KeyBundle::from_ksync_base64(&params.acct_sync_key)?;
         let tokenserver_url = url::Url::parse(&params.acct_tokenserver_url)?;
@@ -293,16 +257,12 @@ impl SyncManager {
         } else {
             None
         };
-        let ls = if logins_sync {
-            logins.as_ref().map(|l| l.lock().expect("poisoned mutex"))
-        } else {
-            None
-        };
         let ts = if tabs_sync {
             tabs.as_ref().map(|t| t.lock().expect("poisoned mutex"))
         } else {
             None
         };
+        let ls = if logins_sync { logins } else { None };
         let ads = if addresses_sync { addresses } else { None };
         let cs = if credit_cards_sync {
             credit_cards
@@ -333,9 +293,8 @@ impl SyncManager {
             }
         }
 
-        if let Some(le) = ls.as_ref() {
-            assert!(logins_sync, "Should have already checked");
-            engines.push(Box::new(logins::LoginsSyncEngine::new(&le)));
+        if let Some(logins) = ls {
+            engines.push(logins);
         }
 
         if let Some(tbs) = ts.as_ref() {

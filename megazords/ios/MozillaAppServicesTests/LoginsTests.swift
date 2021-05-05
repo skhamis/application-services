@@ -43,20 +43,20 @@ class LoginsTests: XCTestCase {
         XCTAssertFalse(dbOpened, "Bad key unlocked the db!")
     }
 
-    func testLoginRecordNil() {
+    func testLoginNil() {
         let storage = getTestStorage()
         try! storage.unlock(withEncryptionKey: "test123")
-        let id0 = try! storage.add(login: LoginRecord(
+        let id0 = try! storage.add(login: Login(
             id: "",
-            password: "hunter2",
             hostname: "https://www.example.com",
+            password: "hunter2",
             username: "cooluser33",
             formSubmitURL: "https://www.example.com/login",
             httpRealm: nil,
-            timesUsed: nil,
-            timeLastUsed: nil,
-            timeCreated: nil,
-            timePasswordChanged: nil,
+            timesUsed: 0,
+            timeLastUsed: 0,
+            timeCreated: 0,
+            timePasswordChanged: 0,
             usernameField: "users_name",
             passwordField: "users_password"
         ))
@@ -66,17 +66,17 @@ class LoginsTests: XCTestCase {
         // We fixed up the formSubmitURL to just be the origin part of the url.
         XCTAssertEqual(record0.formSubmitURL, "https://www.example.com")
 
-        let id1 = try! storage.add(login: LoginRecord(
+        let id1 = try! storage.add(login: Login(
             id: "",
-            password: "hunter3",
             hostname: "https://www.example2.com",
+            password: "hunter3",
             username: "cooluser44",
             formSubmitURL: nil,
             httpRealm: "Something Something",
-            timesUsed: nil,
-            timeLastUsed: nil,
-            timeCreated: nil,
-            timePasswordChanged: nil,
+            timesUsed: 0,
+            timeLastUsed: 0,
+            timeCreated: 0,
+            timePasswordChanged: 0,
             usernameField: "",
             passwordField: ""
         ))
@@ -91,47 +91,47 @@ class LoginsTests: XCTestCase {
         let storage = getTestStorage()
         try! storage.unlock(withEncryptionKey: "test123")
 
-        let id0 = try! storage.add(login: LoginRecord(
+        let id0 = try! storage.add(login: Login(
             id: "",
-            password: "hunter5",
             hostname: "https://www.example5.com",
+            password: "hunter5",
             username: "cooluser55",
             formSubmitURL: "https://www.example5.com",
             httpRealm: nil,
-            timesUsed: nil,
-            timeLastUsed: nil,
-            timeCreated: nil,
-            timePasswordChanged: nil,
+            timesUsed: 0,
+            timeLastUsed: 0,
+            timeCreated: 0,
+            timePasswordChanged: 0,
             usernameField: "users_name",
             passwordField: "users_password"
         ))
 
-        let dupeLogin = LoginRecord(
+        let dupeLogin = Login(
             id: "",
-            password: "hunter3",
             hostname: "https://www.example5.com",
+            password: "hunter3",
             username: "cooluser55",
             formSubmitURL: "https://www.example5.com",
             httpRealm: nil,
-            timesUsed: nil,
-            timeLastUsed: nil,
-            timeCreated: nil,
-            timePasswordChanged: nil,
+            timesUsed: 0,
+            timeLastUsed: 0,
+            timeCreated: 0,
+            timePasswordChanged: 0,
             usernameField: "users_name",
             passwordField: "users_password"
         )
 
-        let nullValueLogin = LoginRecord(
+        let nullValueLogin = Login(
             id: "",
-            password: "hunter3",
             hostname: "https://www.example6.com",
+            password: "hunter3",
             username: "\0cooluser56",
             formSubmitURL: "https://www.example6.com",
             httpRealm: nil,
-            timesUsed: nil,
-            timeLastUsed: nil,
-            timeCreated: nil,
-            timePasswordChanged: nil,
+            timesUsed: 0,
+            timeLastUsed: 0,
+            timeCreated: 0,
+            timePasswordChanged: 0,
             usernameField: "users_name",
             passwordField: "users_password"
         )
