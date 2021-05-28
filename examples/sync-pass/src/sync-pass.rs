@@ -350,6 +350,19 @@ fn main() -> Result<()> {
                     log::warn!("Failed to wipe! {}", e);
                 }
             }
+            'S' | 's' => {
+                log::info!("Syncing!");
+                match Arc::clone(&store).sync(&cli_fxa.client_init, &cli_fxa.root_sync_key) {
+                    Err(e) => {
+                        log::warn!("Sync failed! {}", e);
+                        log::warn!("BT: {:?}", e.backtrace());
+                    },
+                    Ok(sync_ping) => {
+                        log::info!("Sync was successful!");
+                        log::info!("Sync telemetry: {}", serde_json::to_string_pretty(&sync_ping).unwrap());
+                    }
+                }
+            }
             'V' | 'v' => {
                 if let Err(e) = show_all(&store) {
                     log::warn!("Failed to dump passwords? This is probably bad! {}", e);

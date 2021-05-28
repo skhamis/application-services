@@ -51,7 +51,7 @@ class LoginsTests: XCTestCase {
             hostname: "https://www.example.com",
             password: "hunter2",
             username: "cooluser33",
-            formSubmitURL: "https://www.example.com/login",
+            formSubmitUrl: "https://www.example.com/login",
             httpRealm: nil,
             timesUsed: 0,
             timeLastUsed: 0,
@@ -63,15 +63,15 @@ class LoginsTests: XCTestCase {
 
         let record0 = try! storage.get(id: id0)!
         XCTAssertNil(record0.httpRealm)
-        // We fixed up the formSubmitURL to just be the origin part of the url.
-        XCTAssertEqual(record0.formSubmitURL, "https://www.example.com")
+        // We fixed up the formSubmitUrl to just be the origin part of the url.
+        XCTAssertEqual(record0.formSubmitUrl, "https://www.example.com")
 
         let id1 = try! storage.add(login: Login(
             id: "",
             hostname: "https://www.example2.com",
             password: "hunter3",
             username: "cooluser44",
-            formSubmitURL: nil,
+            formSubmitUrl: nil,
             httpRealm: "Something Something",
             timesUsed: 0,
             timeLastUsed: 0,
@@ -83,7 +83,7 @@ class LoginsTests: XCTestCase {
 
         let record1 = try! storage.get(id: id1)!
 
-        XCTAssertNil(record1.formSubmitURL)
+        XCTAssertNil(record1.formSubmitUrl)
         XCTAssertEqual(record1.httpRealm, "Something Something")
     }
 
@@ -96,7 +96,7 @@ class LoginsTests: XCTestCase {
             hostname: "https://www.example5.com",
             password: "hunter5",
             username: "cooluser55",
-            formSubmitURL: "https://www.example5.com",
+            formSubmitUrl: "https://www.example5.com",
             httpRealm: nil,
             timesUsed: 0,
             timeLastUsed: 0,
@@ -111,7 +111,7 @@ class LoginsTests: XCTestCase {
             hostname: "https://www.example5.com",
             password: "hunter3",
             username: "cooluser55",
-            formSubmitURL: "https://www.example5.com",
+            formSubmitUrl: "https://www.example5.com",
             httpRealm: nil,
             timesUsed: 0,
             timeLastUsed: 0,
@@ -126,7 +126,7 @@ class LoginsTests: XCTestCase {
             hostname: "https://www.example6.com",
             password: "hunter3",
             username: "\0cooluser56",
-            formSubmitURL: "https://www.example6.com",
+            formSubmitUrl: "https://www.example6.com",
             httpRealm: nil,
             timesUsed: 0,
             timeLastUsed: 0,

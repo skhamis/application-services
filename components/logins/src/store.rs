@@ -7,7 +7,10 @@ use crate::login::Login;
 use crate::LoginsSyncEngine;
 use std::path::Path;
 use std::sync::{Arc, Mutex, Weak};
-use sync15::{EngineSyncAssociation, SyncEngine};
+use sync15::{
+    sync_multiple, telemetry, EngineSyncAssociation, KeyBundle, MemoryCachedState,
+    Sync15StorageClientInit, SyncEngine,
+};
 
 // Our "sync manager" will use whatever is stashed here.
 lazy_static::lazy_static! {
@@ -16,16 +19,16 @@ lazy_static::lazy_static! {
     static ref STORE_FOR_MANAGER: Mutex<Weak<LoginStore>> = Mutex::new(Weak::new());
 }
 
-    /// Called by the sync manager to get a sync engine via the store previously
-    /// registered with the sync manager.
-    pub fn get_registered_sync_engine(name: &str) -> Option<Box<dyn SyncEngine>> {
-        let weak = STORE_FOR_MANAGER.lock().unwrap();
-        match weak.upgrade() {
-            None => None,
-            Some(store) => match name {
-                "logins" => Some(Box::new(LoginsSyncEngine::new(Arc::clone(&store)))),
-                // panicing here seems reasonable - it's a static error if this
-                // it hit, not something that runtime conditions can influence.
+/// Called by the sync manager to get a sync engine via the store previously
+/// registered with the sync manager.
+pub fn get_registered_sync_engine(name: &str) -> Option<Box<dyn SyncEngine>> {
+    let weak = STORE_FOR_MANAGER.lock().unwrap();
+    match weak.upgrade() {
+        None => None,
+        Some(store) => match name {
+            "logins" => Some(Box::new(LoginsSyncEngine::new(Arc::clone(&store)))),
+            // panicing here seems reasonable - it's a static error if this
+            // it hit, not something that runtime conditions can influence.
             _ => unreachable!("can't provide unknown engine: {}", name),
         },
     }
@@ -138,7 +141,47 @@ impl LoginStore {
         self.db.lock().unwrap().check_valid_with_no_dupes(&login)
     }
 
-     // This allows the embedding app to say "make this instance available to
+    /// A convenience wrapper around sync_multiple.
+    // This can almost die later - consumers should never call it (they should
+    // use the sync manager) and any of our examples probably can too!
+    // Once this dies, `mem_cached_state` can die too.
+    pub fn sync(
+        self: Arc<Self>,
+        storage_init: &Sync15StorageClientInit,
+        root_sync_key: &KeyBundle,
+    ) -> Result<telemetry::SyncTelemetryPing> {
+        let engine = LoginsSyncEngine::new(Arc::clone(&self));
+
+        let mut disk_cached_state = engine.get_global_state()?;
+        let mut mem_cached_state = MemoryCachedState::default();
+
+        let mut result = sync_multiple(
+            &[&engine],
+            &mut disk_cached_state,
+            &mut mem_cached_state,
+            storage_init,
+            root_sync_key,
+            &engine.scope,
+            None,
+        );
+        // We always update the state - sync_multiple does the right thing
+        // if it needs to be dropped (ie, they will be None or contain Nones etc)
+        engine.set_global_state(&disk_cached_state)?;
+
+        // for b/w compat reasons, we do some dances with the result.
+        // XXX - note that this means telemetry isn't going to be reported back
+        // to the app - we need to check with lockwise about whether they really
+        // need these failures to be reported or whether we can loosen this.
+        if let Err(e) = result.result {
+            return Err(e.into());
+        }
+        match result.engine_results.remove("passwords") {
+            None | Some(Ok(())) => Ok(result.telemetry),
+            Some(Err(e)) => Err(e.into()),
+        }
+    }
+
+    // This allows the embedding app to say "make this instance available to
     // the sync manager". The implementation is more like "offer to sync mgr"
     // (thereby avoiding us needing to link with the sync manager) but
     // `register_with_sync_manager()` is logically what's happening so that's
@@ -319,11 +362,7 @@ mod test {
         assert_eq!(Arc::weak_count(&store), 1);
         // dropping the registered object should drop the registration.
         drop(store);
-        assert!(STORE_FOR_MANAGER
-            .lock()
-            .unwrap()
-            .upgrade()
-            .is_none());
+        assert!(STORE_FOR_MANAGER.lock().unwrap().upgrade().is_none());
     }
 }
 
