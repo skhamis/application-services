@@ -62,7 +62,8 @@ interface LoginStore {
     void wipe();
     [Throws=LoginsStorageError]
     void wipe_local();
-    [Throws=LoginsStorageError]
+
+    [Throws=LoginsStorageError, Self=ByArc]
     void reset();
 
     [Throws=LoginsStorageError]
@@ -92,5 +93,6 @@ interface LoginStore {
     [Throws=LoginsStorageError]
     string import_multiple(sequence<Login> login);
 
+    [Self=ByArc]
     void register_with_sync_manager();
 };

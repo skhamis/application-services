@@ -5,188 +5,37 @@ use crate::db::LoginDb;
 use crate::error::*;
 use crate::login::Login;
 use crate::LoginsSyncEngine;
-use std::cell::RefCell;
 use std::path::Path;
 use std::sync::{Arc, Mutex, Weak};
-use sync15::{sync_multiple, telemetry, EngineSyncAssociation, KeyBundle, Sync15StorageClientInit};
+use sync15::{EngineSyncAssociation, SyncEngine};
 
 // Our "sync manager" will use whatever is stashed here.
 lazy_static::lazy_static! {
     // Mutex: just taken long enough to update the inner stuff - needed
     //        to wrap the RefCell as they aren't `Sync`
-    // RefCell: So we can replace what it holds. Normally you'd use `get_ref()`
-    //          on the mutex and avoid the RefCell entirely, but that requires
-    //          the mutex to be declared as `mut` which is apparently
-    //          impossible in a `lazy_static`
-    // <[Arc/Weak]<LoginStoreImpl>>: What the sync manager actually needs.
-    pub static ref STORE_FOR_MANAGER: Mutex<RefCell<Weak<LoginStoreImpl>>> = Mutex::new(RefCell::new(Weak::new()));
+    static ref STORE_FOR_MANAGER: Mutex<Weak<LoginStore>> = Mutex::new(Weak::new());
 }
 
-// This is the type that uniffi exposes. It holds an `Arc<>` around the
-// actual implementation, because we need to hand a clone of this `Arc<>` to
-// the sync manager and to sync engines. One day
-// https://github.com/mozilla/uniffi-rs/issues/417 will give us access to the
-// `Arc<>` uniffi owns, which means we can drop this entirely (ie, `Store` and
-// `StoreImpl` could be re-unified)
+    /// Called by the sync manager to get a sync engine via the store previously
+    /// registered with the sync manager.
+    pub fn get_registered_sync_engine(name: &str) -> Option<Box<dyn SyncEngine>> {
+        let weak = STORE_FOR_MANAGER.lock().unwrap();
+        match weak.upgrade() {
+            None => None,
+            Some(store) => match name {
+                "logins" => Some(Box::new(LoginsSyncEngine::new(Arc::clone(&store)))),
+                // panicing here seems reasonable - it's a static error if this
+                // it hit, not something that runtime conditions can influence.
+            _ => unreachable!("can't provide unknown engine: {}", name),
+        },
+    }
+}
+
 pub struct LoginStore {
-    pub store_impl: Arc<LoginStoreImpl>,
-}
-
-impl LoginStore {
-    // First up we have the (few) things that want access to our `Arc<>`
-
-    /// A convenience wrapper around sync_multiple.
-    // This can almost die later - consumers should never call it (they should
-    // use the sync manager) and any of our examples probably can too!
-    pub fn sync(
-        &self,
-        storage_init: &Sync15StorageClientInit,
-        root_sync_key: &KeyBundle,
-    ) -> Result<telemetry::SyncTelemetryPing> {
-        let engine = LoginsSyncEngine::new(Arc::clone(&self.store_impl));
-
-        let mut disk_cached_state = engine.get_global_state()?;
-        // Because `sync` should not be used in practice, and because
-        // `mem_cached_state` can be considered an optimization (in that it
-        // allows subsequent syncs to do less work) we just discard this state,
-        // so every sync acts like it's the first one the process has done.
-        // (disk_cached_state is far more important - but even in this context
-        // it probably doesn't matter, but it's not getting in our way yet)
-        let mut mem_cached_state = Default::default();
-
-        let mut result = sync_multiple(
-            &[&engine],
-            &mut disk_cached_state,
-            &mut mem_cached_state,
-            storage_init,
-            root_sync_key,
-            &engine.scope,
-            None,
-        );
-        // We always update the state - sync_multiple does the right thing
-        // if it needs to be dropped (ie, they will be None or contain Nones etc)
-        engine.set_global_state(&disk_cached_state)?;
-
-        // for b/w compat reasons, we do some dances with the result.
-        // XXX - note that this means telemetry isn't going to be reported back
-        // to the app - we need to check with lockwise about whether they really
-        // need these failures to be reported or whether we can loosen this.
-        if let Err(e) = result.result {
-            return Err(e.into());
-        }
-        match result.engine_results.remove("passwords") {
-            None | Some(Ok(())) => Ok(result.telemetry),
-            Some(Err(e)) => Err(e.into()),
-        }
-    }
-
-    // This needs our Arc<>
-    pub fn register_with_sync_manager(&self) {
-        STORE_FOR_MANAGER
-            .lock()
-            .unwrap()
-            .replace(Arc::downgrade(&self.store_impl.clone()));
-    }
-
-    // This needs our Arc<>
-    pub fn reset(&self) -> Result<()> {
-        // Reset should not exist here - all resets should be done via the
-        // sync manager. It seems that actual consumers don't use this, but
-        // some tests do, so it remains for now.
-        let engine = LoginsSyncEngine::new(Arc::clone(&self.store_impl));
-        engine.do_reset(&EngineSyncAssociation::Disconnected)?;
-        Ok(())
-    }
-
-    // Everything below here is a simple delegate to the impl.
-    pub fn new(path: impl AsRef<Path>, encryption_key: &str) -> Result<Self> {
-        Ok(Self {
-            store_impl: Arc::new(LoginStoreImpl::new(path, encryption_key)?),
-        })
-    }
-
-    pub fn new_with_salt(path: impl AsRef<Path>, encryption_key: &str, salt: &str) -> Result<Self> {
-        Ok(Self {
-            store_impl: Arc::new(LoginStoreImpl::new_with_salt(path, encryption_key, salt)?),
-        })
-    }
-
-    pub fn new_in_memory(encryption_key: Option<&str>) -> Result<Self> {
-        Ok(Self {
-            store_impl: Arc::new(LoginStoreImpl::new_in_memory(encryption_key)?),
-        })
-    }
-
-    pub fn list(&self) -> Result<Vec<Login>> {
-        self.store_impl.list()
-    }
-
-    pub fn get(&self, id: &str) -> Result<Option<Login>> {
-        self.store_impl.get(id)
-    }
-
-    pub fn get_by_base_domain(&self, base_domain: &str) -> Result<Vec<Login>> {
-        self.store_impl.get_by_base_domain(base_domain)
-    }
-
-    pub fn potential_dupes_ignoring_username(&self, login: Login) -> Result<Vec<Login>> {
-        self.store_impl.potential_dupes_ignoring_username(login)
-    }
-
-    pub fn touch(&self, id: &str) -> Result<()> {
-        self.store_impl.touch(id)
-    }
-
-    pub fn delete(&self, id: &str) -> Result<bool> {
-        self.store_impl.delete(id)
-    }
-
-    pub fn wipe(&self) -> Result<()> {
-        self.store_impl.wipe()
-    }
-
-    pub fn wipe_local(&self) -> Result<()> {
-        self.store_impl.wipe_local()
-    }
-
-    pub fn update(&self, login: Login) -> Result<()> {
-        self.store_impl.update(login)
-    }
-
-    pub fn add(&self, login: Login) -> Result<String> {
-        self.store_impl.add(login)
-    }
-
-    pub fn import_multiple(&self, logins: Vec<Login>) -> Result<String> {
-        self.store_impl.import_multiple(logins)
-    }
-
-    pub fn disable_mem_security(&self) -> Result<()> {
-        self.store_impl.disable_mem_security()
-    }
-
-    pub fn new_interrupt_handle(&self) -> sql_support::SqlInterruptHandle {
-        self.store_impl.new_interrupt_handle()
-    }
-
-    pub fn rekey_database(&self, new_encryption_key: &str) -> Result<()> {
-        self.store_impl.rekey_database(new_encryption_key)
-    }
-
-    pub fn check_valid_with_no_dupes(&self, login: &Login) -> Result<()> {
-        self.store_impl.check_valid_with_no_dupes(login)
-    }
-}
-
-// The actual store implementation.
-// This store is a bundle of state to manage the login DB and to help the
-// SyncEngine.
-// This will go away once uniffi gives us access to its `Arc<>`
-pub struct LoginStoreImpl {
     pub db: Mutex<LoginDb>,
 }
 
-impl LoginStoreImpl {
+impl LoginStore {
     pub fn new(path: impl AsRef<Path>, encryption_key: &str) -> Result<Self> {
         let db = Mutex::new(LoginDb::open(path, Some(encryption_key))?);
         Ok(Self { db })
@@ -246,11 +95,11 @@ impl LoginStoreImpl {
         Ok(())
     }
 
-    pub fn reset(&self) -> Result<()> {
+    pub fn reset(self: Arc<Self>) -> Result<()> {
         // Reset should not exist here - all resets should be done via the
         // sync manager. It seems that actual consumers don't use this, but
         // some tests do, so it remains for now.
-        let engine = LoginsSyncEngine::new(&self);
+        let engine = LoginsSyncEngine::new(Arc::clone(&self));
         engine.do_reset(&EngineSyncAssociation::Disconnected)?;
         Ok(())
     }
@@ -287,6 +136,26 @@ impl LoginStoreImpl {
 
     pub fn check_valid_with_no_dupes(&self, login: &Login) -> Result<()> {
         self.db.lock().unwrap().check_valid_with_no_dupes(&login)
+    }
+
+     // This allows the embedding app to say "make this instance available to
+    // the sync manager". The implementation is more like "offer to sync mgr"
+    // (thereby avoiding us needing to link with the sync manager) but
+    // `register_with_sync_manager()` is logically what's happening so that's
+    // the name it gets.
+    pub fn register_with_sync_manager(self: Arc<Self>) {
+        let mut state = STORE_FOR_MANAGER.lock().unwrap();
+        *state = Arc::downgrade(&self);
+    }
+
+    // this isn't exposed by uniffi - currently the
+    // only consumer of this is our "example" (and hence why they
+    // are `pub` and not `pub(crate)`).
+    // We could probably make the example work with the sync manager - but then
+    // our example would link with places and logins etc, and it's not a big
+    // deal really.
+    pub fn create_logins_sync_engine(self: Arc<Self>) -> Box<dyn SyncEngine> {
+        Box::new(LoginsSyncEngine::new(self))
     }
 }
 
@@ -432,29 +301,27 @@ mod test {
     }
     #[test]
     fn test_sync_manager_registration() {
-        let store = LoginStore::new_in_memory(Some("sync-manager")).unwrap();
-        assert_eq!(Arc::strong_count(&store.store_impl), 1);
-        assert_eq!(Arc::weak_count(&store.store_impl), 0);
-        store.register_with_sync_manager();
-        assert_eq!(Arc::strong_count(&store.store_impl), 1);
-        assert_eq!(Arc::weak_count(&store.store_impl), 1);
+        let store = Arc::new(LoginStore::new_in_memory(Some("sync-manager")).unwrap());
+        assert_eq!(Arc::strong_count(&store), 1);
+        assert_eq!(Arc::weak_count(&store), 0);
+        Arc::clone(&store).register_with_sync_manager();
+        assert_eq!(Arc::strong_count(&store), 1);
+        assert_eq!(Arc::weak_count(&store), 1);
         let registered = STORE_FOR_MANAGER
             .lock()
             .unwrap()
-            .borrow()
             .upgrade()
             .expect("should upgrade");
-        assert!(Arc::ptr_eq(&store.store_impl, &registered));
+        assert!(Arc::ptr_eq(&store, &registered));
         drop(registered);
         // should be no new references
-        assert_eq!(Arc::strong_count(&store.store_impl), 1);
-        assert_eq!(Arc::weak_count(&store.store_impl), 1);
+        assert_eq!(Arc::strong_count(&store), 1);
+        assert_eq!(Arc::weak_count(&store), 1);
         // dropping the registered object should drop the registration.
         drop(store);
         assert!(STORE_FOR_MANAGER
             .lock()
             .unwrap()
-            .borrow()
             .upgrade()
             .is_none());
     }

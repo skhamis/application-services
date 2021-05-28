@@ -280,7 +280,7 @@ fn main() -> Result<()> {
     // TODO: allow users to use stage/etc.
     let cli_fxa = get_cli_fxa(get_default_fxa_config(), cred_file)?;
 
-    let store = LoginStore::new(db_path, encryption_key)?;
+    let store = Arc::new(LoginStore::new(db_path, encryption_key).unwrap());
 
     log::info!("Store has {} passwords", store.list()?.len());
 
@@ -289,7 +289,7 @@ fn main() -> Result<()> {
     }
 
     loop {
-        match prompt_char("[A]dd, [D]elete, [U]pdate, [S]ync, [V]iew, [B]ase-domain search, [R]eset, [W]ipe, [T]ouch, E[x]ecute SQL Query, or [Q]uit").unwrap_or('?') {
+        match prompt_char("[A]dd, [D]elete, [U]pdate, [V]iew, [B]ase-domain search, [R]eset, [W]ipe, [T]ouch, E[x]ecute SQL Query, or [Q]uit").unwrap_or('?') {
             'A' | 'a' => {
                 log::info!("Adding new record");
                 let record = read_login();
@@ -339,7 +339,7 @@ fn main() -> Result<()> {
             }
             'R' | 'r' => {
                 log::info!("Resetting client.");
-                let engine = LoginsSyncEngine::new(Arc::clone(&store.store_impl));
+                let engine = LoginsSyncEngine::new(Arc::clone(&store));
                 if let Err(e) = engine.reset(&EngineSyncAssociation::Disconnected) {
                     log::warn!("Failed to reset! {}", e);
                 }
@@ -348,19 +348,6 @@ fn main() -> Result<()> {
                 log::info!("Wiping all data from client!");
                 if let Err(e) = store.wipe() {
                     log::warn!("Failed to wipe! {}", e);
-                }
-            }
-            'S' | 's' => {
-                log::info!("Syncing!");
-                match store.sync(&cli_fxa.client_init, &cli_fxa.root_sync_key) {
-                    Err(e) => {
-                        log::warn!("Sync failed! {}", e);
-                        log::warn!("BT: {:?}", e.backtrace());
-                    },
-                    Ok(sync_ping) => {
-                        log::info!("Sync was successful!");
-                        log::info!("Sync telemetry: {}", serde_json::to_string_pretty(&sync_ping).unwrap());
-                    }
                 }
             }
             'V' | 'v' => {
@@ -399,7 +386,7 @@ fn main() -> Result<()> {
             'x' | 'X' => {
                 log::info!("Running arbitrary SQL, there's no way this could go wrong!");
                 if let Some(sql) = prompt_string("SQL (one line only, press enter when done):\n") {
-                    let db = store.store_impl.db.lock().unwrap();
+                    let db = store.db.lock().unwrap();
                     if let Err(e) = show_sql(&db, &sql) {
                         log::warn!("Failed to run sql query: {}", e);
                     }

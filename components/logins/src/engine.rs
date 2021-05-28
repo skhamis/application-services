@@ -8,7 +8,7 @@ use crate::login::{LocalLogin, Login, MirrorLogin, SyncLoginData, SyncStatus};
 use crate::schema;
 use crate::update_plan::UpdatePlan;
 use crate::LoginDb;
-type LoginStore = crate::LoginStoreImpl;
+use crate::LoginStore;
 use rusqlite::NO_PARAMS;
 use sql_support::SqlInterruptScope;
 use sql_support::{self, ConnExt};
@@ -416,8 +416,8 @@ mod tests {
     use crate::store::LoginStore;
     #[test]
     fn test_bad_record() {
-        let store = LoginStore::new_in_memory(Some("testing")).unwrap();
-        let engine = LoginsSyncEngine::new(Arc::clone(&store.store_impl));
+        let store = Arc::new(LoginStore::new_in_memory(Some("testing")).unwrap());
+        let engine = LoginsSyncEngine::new(Arc::clone(&store));
         let mut telem = sync15::telemetry::EngineIncoming::new();
         let res = engine
             .fetch_login_data(

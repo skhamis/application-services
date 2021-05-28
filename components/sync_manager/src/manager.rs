@@ -65,38 +65,22 @@ impl SyncManager {
         self.tabs = Arc::downgrade(&tabs);
     }
 
-    // Newer engines have a singleton "imported" via crate interdependencies,
-    // all which follow the same basic pattern, so handle them all here.
-    fn imported_engine(engine: &str) -> Option<Box<dyn SyncEngine>> {
-        match engine {
-            "addresses" | "creditcards" => {
-                let cell = autofill::STORE_FOR_MANAGER.lock().unwrap();
-                // The cell holds a `Weak` - borrow it (which is safe as we have the
-                // mutex) and upgrade it to a real Arc.
-                let weak = cell.borrow();
-                match weak.upgrade() {
-                    None => None,
-                    Some(arc) => Some(match engine {
-                        "addresses" => Box::new(autofill::sync::address::create_engine(arc)),
-                        "creditcards" => Box::new(autofill::sync::credit_card::create_engine(arc)),
-                        _ => unreachable!(),
-                    }),
-                }
-            }
-            "logins" => {
-                let cell = logins::STORE_FOR_MANAGER.lock().unwrap();
-                let weak = cell.borrow();
-                match weak.upgrade() {
-                    None => None,
-                    Some(arc) => Some(Box::new(logins::LoginsSyncEngine::new(Arc::clone(&arc)))),
-                }
-            }
-            _ => unreachable!("no engine {}", engine),
-        }
+    pub fn autofill_engine(engine: &str) -> Option<Box<dyn SyncEngine>> {
+        autofill::get_registered_sync_engine(engine)
+    }
+
+    pub fn logins_engine(engine: &str) -> Option<Box<dyn SyncEngine>> {
+        logins::get_registered_sync_engine(engine)
     }
 
     pub fn wipe(&mut self, engine: &str) -> Result<()> {
         match engine {
+            "logins" => {
+                if let Some(engine) = Self::logins_engine(engine) {
+                    engine.wipe()?;
+                }
+                Ok(())
+            }
             "bookmarks" => {
                 if let Some(places) = self.places.upgrade() {
                     places.wipe_bookmarks()?;
@@ -113,8 +97,8 @@ impl SyncManager {
                     Err(ErrorKind::ConnectionClosed(engine.into()).into())
                 }
             }
-            "addresses" | "creditcards" | "logins" => {
-                if let Some(engine) = Self::imported_engine(engine) {
+            "addresses" | "creditcards" => {
+                if let Some(engine) = Self::autofill_engine(engine) {
                     engine.wipe()?;
                 }
                 Ok(())
@@ -137,8 +121,14 @@ impl SyncManager {
                     Err(ErrorKind::ConnectionClosed(engine.into()).into())
                 }
             }
-            "addresses" | "creditcards" | "logins" => {
-                if let Some(engine) = Self::imported_engine(engine) {
+            "addresses" | "creditcards" => {
+                if let Some(engine) = Self::autofill_engine(engine) {
+                    engine.reset(&EngineSyncAssociation::Disconnected)?;
+                }
+                Ok(())
+            }
+            "logins" => {
+                if let Some(engine) = Self::logins_engine(engine) {
                     engine.reset(&EngineSyncAssociation::Disconnected)?;
                 }
                 Ok(())
@@ -152,10 +142,11 @@ impl SyncManager {
             places.reset_bookmarks()?;
             places.reset_history()?;
         }
-        for name in &["addresses", "creditcards", "logins"] {
-            if let Some(engine) = Self::imported_engine(name) {
-                engine.reset(&EngineSyncAssociation::Disconnected)?;
-            }
+        if let Some(addresses) = Self::autofill_engine("addresses") {
+            addresses.reset(&EngineSyncAssociation::Disconnected)?;
+        }
+        if let Some(credit_cards) = Self::autofill_engine("creditcards") {
+            credit_cards.reset(&EngineSyncAssociation::Disconnected)?;
         }
         Ok(())
     }
@@ -171,12 +162,26 @@ impl SyncManager {
         } else {
             log::warn!("Unable to reset places, be sure to call set_places before disconnect if this is surprising");
         }
-        for name in &["addresses", "creditcards", "logins"] {
-            if let Some(engine) = Self::imported_engine(name) {
-                if let Err(e) = engine.reset(&EngineSyncAssociation::Disconnected) {
-                    log::warn!("Failed to reset {}: {}", name, e);
-                }
+        if let Some(addresses) = Self::autofill_engine("addresses") {
+            if let Err(e) = addresses.reset(&EngineSyncAssociation::Disconnected) {
+                log::error!("Failed to reset addresses: {}", e);
             }
+        } else {
+            log::warn!("Unable to reset addresses, be sure to call register_with_sync_manager before disconnect if this is surprising");
+        }
+        if let Some(credit_cards) = Self::autofill_engine("creditcards") {
+            if let Err(e) = credit_cards.reset(&EngineSyncAssociation::Disconnected) {
+                log::error!("Failed to reset credit cards: {}", e);
+            }
+        } else {
+            log::warn!("Unable to reset credit cards, be sure to call register_with_sync_manager before disconnect if this is surprising");
+        }
+        if let Some(logins) = Self::logins_engine("logins") {
+            if let Err(e) = logins.reset(&EngineSyncAssociation::Disconnected) {
+                log::error!("Failed to reset logins: {}", e);
+            }
+        } else {
+            log::warn!("Unable to reset logins, be sure to call register_with_sync_manager before disconnect if this is surprising");
         }
     }
 
@@ -184,9 +189,9 @@ impl SyncManager {
         let mut have_engines = vec![];
         let places = self.places.upgrade();
         let tabs = self.tabs.upgrade();
-        let logins = Self::imported_engine("logins");
-        let addresses = Self::imported_engine("addresses");
-        let credit_cards = Self::imported_engine("creditcards");
+        let logins = Self::logins_engine("logins");
+        let addresses = Self::autofill_engine("addresses");
+        let credit_cards = Self::autofill_engine("creditcards");
         if places.is_some() {
             have_engines.push(HISTORY_ENGINE);
             have_engines.push(BOOKMARKS_ENGINE);
@@ -234,9 +239,9 @@ impl SyncManager {
     fn do_sync(&mut self, mut params: SyncParams) -> Result<SyncResult> {
         let mut places = self.places.upgrade();
         let tabs = self.tabs.upgrade();
-        let logins = Self::imported_engine("logins");
-        let addresses = Self::imported_engine("addresses");
-        let credit_cards = Self::imported_engine("creditcards");
+        let logins = Self::logins_engine("logins");
+        let addresses = Self::autofill_engine("addresses");
+        let credit_cards = Self::autofill_engine("creditcards");
 
         let key_bundle = sync15::KeyBundle::from_ksync_base64(&params.acct_sync_key)?;
         let tokenserver_url = url::Url::parse(&params.acct_tokenserver_url)?;
