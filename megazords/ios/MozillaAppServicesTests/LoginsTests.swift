@@ -51,14 +51,14 @@ class LoginsTests: XCTestCase {
             hostname: "https://www.example.com",
             password: "hunter2",
             username: "cooluser33",
-            formSubmitUrl: "https://www.example.com/login",
             httpRealm: nil,
-            timesUsed: 0,
-            timeLastUsed: 0,
-            timeCreated: 0,
-            timePasswordChanged: 0,
+            formSubmitUrl: "https://www.example.com/login",
             usernameField: "users_name",
-            passwordField: "users_password"
+            passwordField: "users_password",
+            timesUsed: 0,
+            timeCreated: 0,
+            timeLastUsed: 0,
+            timePasswordChanged: 0
         ))
 
         let record0 = try! storage.get(id: id0)!
@@ -71,14 +71,14 @@ class LoginsTests: XCTestCase {
             hostname: "https://www.example2.com",
             password: "hunter3",
             username: "cooluser44",
-            formSubmitUrl: nil,
             httpRealm: "Something Something",
-            timesUsed: 0,
-            timeLastUsed: 0,
-            timeCreated: 0,
-            timePasswordChanged: 0,
+            formSubmitUrl: nil,
             usernameField: "",
-            passwordField: ""
+            passwordField: "",
+            timesUsed: 0,
+            timeCreated: 0,
+            timeLastUsed: 0,
+            timePasswordChanged: 0
         ))
 
         let record1 = try! storage.get(id: id1)!
@@ -96,14 +96,14 @@ class LoginsTests: XCTestCase {
             hostname: "https://www.example5.com",
             password: "hunter5",
             username: "cooluser55",
-            formSubmitUrl: "https://www.example5.com",
             httpRealm: nil,
-            timesUsed: 0,
-            timeLastUsed: 0,
-            timeCreated: 0,
-            timePasswordChanged: 0,
+            formSubmitUrl: "https://www.example5.com",
             usernameField: "users_name",
-            passwordField: "users_password"
+            passwordField: "users_password",
+            timesUsed: 0,
+            timeCreated: 0,
+            timeLastUsed: 0,
+            timePasswordChanged: 0
         ))
 
         let dupeLogin = Login(
@@ -111,14 +111,14 @@ class LoginsTests: XCTestCase {
             hostname: "https://www.example5.com",
             password: "hunter3",
             username: "cooluser55",
-            formSubmitUrl: "https://www.example5.com",
             httpRealm: nil,
-            timesUsed: 0,
-            timeLastUsed: 0,
-            timeCreated: 0,
-            timePasswordChanged: 0,
+            formSubmitUrl: "https://www.example5.com",
             usernameField: "users_name",
-            passwordField: "users_password"
+            passwordField: "users_password",
+            timesUsed: 0,
+            timeCreated: 0,
+            timeLastUsed: 0,
+            timePasswordChanged: 0
         )
 
         let nullValueLogin = Login(
@@ -126,14 +126,14 @@ class LoginsTests: XCTestCase {
             hostname: "https://www.example6.com",
             password: "hunter3",
             username: "\0cooluser56",
-            formSubmitUrl: "https://www.example6.com",
             httpRealm: nil,
-            timesUsed: 0,
-            timeLastUsed: 0,
-            timeCreated: 0,
-            timePasswordChanged: 0,
+            formSubmitUrl: "https://www.example6.com",
             usernameField: "users_name",
-            passwordField: "users_password"
+            passwordField: "users_password",
+            timesUsed: 0,
+            timeCreated: 0,
+            timeLastUsed: 0,
+            timePasswordChanged: 0
         )
 
         XCTAssertThrowsError(try storage.ensureValid(login: dupeLogin))

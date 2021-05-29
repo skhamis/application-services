@@ -169,25 +169,6 @@ open class LoginsStorage {
         close()
     }
 
-    /// Synchronize with the server. Returns the sync telemetry "ping" as a JSON
-    /// string.
-    open func sync(unlockInfo _: SyncUnlockInfo) throws -> String {
-        // TODO: Need to conver sync
-//        return try queue.sync {
-//            let engine = try self.getUnlocked()
-//            let ptr = try LoginsStoreError.unwrap { err in
-//                sync15_passwords_sync(engine,
-//                                      unlockInfo.kid,
-//                                      unlockInfo.fxaAccessToken,
-//                                      unlockInfo.syncKey,
-//                                      unlockInfo.tokenserverURL,
-//                                      err)
-//            }
-//            return String(freeingRustString: ptr)
-//        }
-        return "blurp"
-    }
-
     /// Delete all locally stored login sync metadata. It's unclear if
     /// there's ever a reason for users to call this
     open func reset() throws {
@@ -289,6 +270,13 @@ open class LoginsStorage {
     open func getByBaseDomain(baseDomain: String) throws -> [Login] {
         return try queue.sync {
             return try self.getUnlockedStore().getByBaseDomain(baseDomain: baseDomain)
+        }
+    }
+
+    /// Register with the sync manager
+    open func registerWithSyncManager() throws {
+        return try queue.sync {
+            return try self.getUnlockedStore().registerWithSyncManager()
         }
     }
 }
