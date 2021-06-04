@@ -18,6 +18,9 @@ import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
 import org.junit.Before
+import mozilla.appservices.places.uniffi.DocumentType
+import mozilla.appservices.places.uniffi.HistoryMetadata
+import mozilla.appservices.places.uniffi.HistoryMetadataObservation
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
@@ -435,7 +438,6 @@ class PlacesConnectionTest {
 
         assertEquals(0, db.getHistoryMetadataSince(0L).size)
         assertEquals(0, db.queryHistoryMetadata("test", 100).size)
-
         db.noteObservation(VisitObservation(
             url = "https://www.ifixit.com/News/35377/which-wireless-earbuds-are-the-least-evil",
             title = "Are All Wireless Earbuds As Evil As AirPods?",
@@ -448,11 +450,7 @@ class PlacesConnectionTest {
             referrerUrl = "https://www.google.com/search?client=firefox-b-d&q=headsets+ifixit"
         )
 
-        db.noteHistoryMetadataObservation(metaKey1,
-            HistoryMetadataObservation.DocumentTypeObservation(
-                documentType = DocumentType.Regular
-            )
-        )
+        db.noteHistoryMetadataObservationDocumentType(metaKey1, DocumentType.REGULAR)
         // title
         assertEquals(1, db.queryHistoryMetadata("airpods", 100).size)
         // url
@@ -464,37 +462,27 @@ class PlacesConnectionTest {
             assertEquals(0, this[0].totalViewTime)
         }
 
-        db.noteHistoryMetadataObservation(metaKey1,
-            HistoryMetadataObservation.ViewTimeObservation(
-                viewTime = 1337
-            )
-        )
+        db.noteHistoryMetadataObservationViewTime(metaKey1, 1337)
 
         // total view time was updated
         with(db.queryHistoryMetadata("headset", 100)) {
             assertEquals(1337, this[0].totalViewTime)
         }
 
-        db.noteHistoryMetadataObservation(metaKey1,
-            HistoryMetadataObservation.ViewTimeObservation(
-                viewTime = 711
-            )
-        )
+        db.noteHistoryMetadataObservationViewTime(metaKey1, 711)
 
         with(db.queryHistoryMetadata("headset", 100)) {
             // total view time was updated
             assertEquals(2048, this[0].totalViewTime)
         }
 
-        db.noteHistoryMetadataObservation(
+        db.noteHistoryMetadataObservationDocumentType(
             HistoryMetadataKey(
                 url = "https://www.youtube.com/watch?v=Cs1b5qvCZ54",
                 searchTerm = "путин валдай",
                 referrerUrl = "https://yandex.ru/query?путин+валдай"
             ),
-            HistoryMetadataObservation.DocumentTypeObservation(
-                documentType = DocumentType.Media
-            )
+            documentType = DocumentType.MEDIA
         )
 
         // recording view time first, before the document type. either order should be fine.
@@ -503,43 +491,28 @@ class PlacesConnectionTest {
             searchTerm = null,
             referrerUrl = null
         )
-        db.noteHistoryMetadataObservation(
-            metaKey2,
-            HistoryMetadataObservation.ViewTimeObservation(
-                viewTime = 200
-            )
-        )
+        db.noteHistoryMetadataObservationViewTime(metaKey2, 200)
 
         // document type defaults to `regular`.
         with(db.getLatestHistoryMetadataForUrl("https://www.youtube.com/watch?v=fdf4r43g")) {
             assertEquals(200, this!!.totalViewTime)
-            assertEquals(DocumentType.Regular, this.documentType)
+            assertEquals(DocumentType.REGULAR, this.documentType)
         }
 
         // able to update document type.
-        db.noteHistoryMetadataObservation(
-            metaKey2,
-            HistoryMetadataObservation.DocumentTypeObservation(
-                documentType = DocumentType.Media
-            )
-        )
+        db.noteHistoryMetadataObservationDocumentType(metaKey2, DocumentType.MEDIA)
 
         with(db.getLatestHistoryMetadataForUrl("https://www.youtube.com/watch?v=fdf4r43g")) {
             assertEquals(200, this!!.totalViewTime)
-            assertEquals(DocumentType.Media, this.documentType)
+            assertEquals(DocumentType.MEDIA, this.documentType)
         }
 
         // document type isn't reset when updating view time
-        db.noteHistoryMetadataObservation(
-            metaKey2,
-            HistoryMetadataObservation.ViewTimeObservation(
-                viewTime = 300
-            )
-        )
+        db.noteHistoryMetadataObservationViewTime(metaKey2, 300)
 
         with(db.getLatestHistoryMetadataForUrl("https://www.youtube.com/watch?v=fdf4r43g")) {
             assertEquals(500, this!!.totalViewTime)
-            assertEquals(DocumentType.Media, this.documentType)
+            assertEquals(DocumentType.MEDIA, this.documentType)
         }
 
         assertEquals(2, db.queryHistoryMetadata("youtube", 100).size)

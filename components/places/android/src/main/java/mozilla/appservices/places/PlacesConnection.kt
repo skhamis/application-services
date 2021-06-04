@@ -18,6 +18,10 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import java.lang.ref.WeakReference
 import org.mozilla.appservices.places.GleanMetrics.PlacesManager as PlacesManagerMetrics
+import mozilla.appservices.places.uniffi.DocumentType
+import mozilla.appservices.places.uniffi.HistoryMetadata
+import mozilla.appservices.places.uniffi.HistoryMetadataObservation
+import mozilla.appservices.places.uniffi.liftSequenceRecordHistoryMetadata
 
 /**
  * Import some private Glean types, so that we can use them in type declarations.
@@ -396,13 +400,7 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
                 this.handle.get(), url, error
             )
         }
-        try {
-            return rustBuffer.asCodedInputStream()?.let { stream ->
-                HistoryMetadata.fromMessage(MsgTypes.HistoryMetadata.parseFrom(stream))
-            }
-        } finally {
-            LibPlacesFFI.INSTANCE.places_destroy_bytebuffer(rustBuffer)
-        }
+        return HistoryMetadata.lift(rustBuffer)
     }
 
     override suspend fun getHistoryMetadataSince(since: Long): List<HistoryMetadata> {
@@ -411,12 +409,7 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
                 LibPlacesFFI.INSTANCE.places_get_history_metadata_since(
                         this.handle.get(), since, error)
             }
-            try {
-                val metadata = MsgTypes.HistoryMetadataList.parseFrom(rustBuffer.asCodedInputStream()!!)
-                return HistoryMetadata.fromCollectionMessage(metadata)
-            } finally {
-                LibPlacesFFI.INSTANCE.places_destroy_bytebuffer(rustBuffer)
-            }
+            return liftSequenceRecordHistoryMetadata(rustBuffer)
         }
     }
 
@@ -426,12 +419,7 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
                 LibPlacesFFI.INSTANCE.places_get_history_metadata_between(
                         this.handle.get(), start, end, error)
             }
-            try {
-                val metadata = MsgTypes.HistoryMetadataList.parseFrom(rustBuffer.asCodedInputStream()!!)
-                return HistoryMetadata.fromCollectionMessage(metadata)
-            } finally {
-                LibPlacesFFI.INSTANCE.places_destroy_bytebuffer(rustBuffer)
-            }
+            return liftSequenceRecordHistoryMetadata(rustBuffer)
         }
     }
 
@@ -441,12 +429,7 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
                 LibPlacesFFI.INSTANCE.places_query_history_metadata(
                         this.handle.get(), query, limit, error)
             }
-            try {
-                val metadata = MsgTypes.HistoryMetadataList.parseFrom(rustBuffer.asCodedInputStream()!!)
-                return HistoryMetadata.fromCollectionMessage(metadata)
-            } finally {
-                LibPlacesFFI.INSTANCE.places_destroy_bytebuffer(rustBuffer)
-            }
+            return liftSequenceRecordHistoryMetadata(rustBuffer)
         }
     }
 
@@ -645,35 +628,37 @@ class PlacesWriterConnection internal constructor(connHandle: Long, api: PlacesA
         }
     }
 
-    override suspend fun noteHistoryMetadataObservation(key: HistoryMetadataKey, observation: HistoryMetadataObservation) {
+    override suspend fun noteHistoryMetadataObservation(observation: HistoryMetadataObservation) {
         // Different types of `HistoryMetadataObservation` are flattened out into a list of values.
         // The other side of this (rust code) is going to deal with missing/absent values. We're just
         // passing them along here.
         // NB: Even though `MsgTypes.HistoryMetadataObservation` has an optional title field, we ignore it here.
         // That's used by consumers which aren't already using the history observation APIs.
-        val builder = MsgTypes.HistoryMetadataObservation.newBuilder()
-
-        // These make up the key:
-        builder.url = key.url
-        key.searchTerm?.let { builder.searchTerm = it }
-        key.referrerUrl?.let { builder.referrerUrl = it }
-
-        (observation as? HistoryMetadataObservation.ViewTimeObservation)?.let {
-            builder.viewTime = observation.viewTime
-        }
-
-        (observation as? HistoryMetadataObservation.DocumentTypeObservation)?.let {
-            builder.documentType = observation.documentType.id
-        }
-
-        val buf = builder.build()
-        val (nioBuf, len) = buf.toNioDirectBuffer()
         return writeQueryCounters.measure {
             rustCall { error ->
-                val ptr = Native.getDirectBufferPointer(nioBuf)
-                LibPlacesFFI.INSTANCE.places_note_history_metadata_observation(this.handle.get(), ptr, len, error)
+                LibPlacesFFI.INSTANCE.places_note_history_metadata_observation(this.handle.get(), observation.lower(), error)
             }
         }
+    }
+
+    override suspend fun noteHistoryMetadataObservationViewTime(key: HistoryMetadataKey, viewTime: Int) {
+        val obs = HistoryMetadataObservation(
+            url = key.url,
+            searchTerm = key.searchTerm,
+            referrerUrl = key.referrerUrl,
+            viewTime = viewTime
+        )
+        noteHistoryMetadataObservation(obs)
+    }
+
+    override suspend fun noteHistoryMetadataObservationDocumentType(key: HistoryMetadataKey, documentType: DocumentType) {
+        val obs = HistoryMetadataObservation(
+            url = key.url,
+            searchTerm = key.searchTerm,
+            referrerUrl = key.referrerUrl,
+            documentType = documentType
+        )
+        noteHistoryMetadataObservation(obs)
     }
 
     override suspend fun deleteHistoryMetadataOlderThan(olderThan: Long) {
@@ -929,7 +914,12 @@ interface WritableHistoryMetadataConnection : ReadableHistoryMetadataConnection 
     /**
      * Record or update metadata information about a URL. See [HistoryMetadataObservation].
      */
-    suspend fun noteHistoryMetadataObservation(key: HistoryMetadataKey, observation: HistoryMetadataObservation)
+    suspend fun noteHistoryMetadataObservation(observation: HistoryMetadataObservation)
+    // XXX - was previously, etc, HistoryMetadataObservation.ViewTimeObservation
+    // this is probably the wrong place for this abstraction?
+    // maybe `key` should go into uniffi? But I think `key` is a leaked abstraction.
+    suspend fun noteHistoryMetadataObservationViewTime(key: HistoryMetadataKey, viewTime: Int)
+    suspend fun noteHistoryMetadataObservationDocumentType(key: HistoryMetadataKey, documentType: DocumentType)
 
     /**
      * Deletes [HistoryMetadata] with [HistoryMetadata.updatedAt] older than [olderThan].
@@ -1310,31 +1300,6 @@ data class SearchResult(
 }
 
 /**
- * Represents a document type of a page.
- */
-enum class DocumentType(val id: Int) {
-    /**
-     * A page that isn't described by any other more specific types.
-     */
-    Regular(0),
-
-    /**
-     * A media page.
-     */
-    Media(1);
-
-    companion object {
-        fun fromMsg(id: Int): DocumentType {
-            return when (id) {
-                0 -> Regular
-                1 -> Media
-                else -> throw IllegalStateException("TODO")
-            }
-        }
-    }
-}
-
-/**
  * Represents a set of properties which uniquely identify a history metadata.
  * In database terms this is a compound key.
  * @property url A url of the page.
@@ -1346,63 +1311,6 @@ data class HistoryMetadataKey(
     val searchTerm: String?,
     val referrerUrl: String?
 )
-
-/**
- * Represents an observation about a [HistoryMetadataKey]. See specific observation types.
- */
-sealed class HistoryMetadataObservation {
-    /**
-     * An observation of the [viewTime] for this page.
-     */
-    data class ViewTimeObservation(
-        val viewTime: Int
-    ) : HistoryMetadataObservation()
-
-    /**
-     * An observation of the [documentType], a [DocumentType] associated with this page.
-     */
-    data class DocumentTypeObservation(
-        val documentType: DocumentType
-    ) : HistoryMetadataObservation()
-}
-
-/**
- * Represents a history metadata record, which describes metadata for a history visit, such as metadata
- * about the page itself as well as metadata about how the page was opened.
- *
- * @property key A compound key which represents this metadata.
- * @property title A title of the page. Only available if it was recorded previously via [WritableHistoryConnection.noteObservation].
- * @property createdAt When this metadata record was created.
- * @property updatedAt The last time this record was updated.
- * @property totalViewTime Total time the user viewed the page associated with this record.
- * @property documentType An associated [DocumentType] for this page.
- */
-data class HistoryMetadata(
-    val key: HistoryMetadataKey,
-    val title: String?,
-    val createdAt: Long,
-    val updatedAt: Long,
-    val totalViewTime: Int,
-    val documentType: DocumentType
-) {
-    companion object {
-        internal fun fromMessage(msg: MsgTypes.HistoryMetadata): HistoryMetadata {
-            return HistoryMetadata(
-                key = HistoryMetadataKey(url = msg.url, searchTerm = msg.searchTerm, referrerUrl = msg.referrerUrl),
-                title = msg.title,
-                createdAt = msg.createdAt,
-                updatedAt = msg.updatedAt,
-                totalViewTime = msg.totalViewTime,
-                documentType = DocumentType.fromMsg(msg.documentType)
-            )
-        }
-        internal fun fromCollectionMessage(msg: MsgTypes.HistoryMetadataList): List<HistoryMetadata> {
-            return msg.metadataList.map {
-                fromMessage(it)
-            }
-        }
-    }
-}
 
 /**
  * Information about a top frecent site. Returned by `PlacesAPI.getTopFrecentSiteInfos`.

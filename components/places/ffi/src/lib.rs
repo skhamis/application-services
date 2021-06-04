@@ -13,14 +13,16 @@ use ffi_support::{
     define_string_destructor, ByteBuffer, ConcurrentHandleMap, ExternError, FfiStr,
 };
 use places::error::*;
-use places::msg_types::{BookmarkNodeList, HistoryMetadataObservation, SearchResultList};
+use places::msg_types::{BookmarkNodeList, SearchResultList};
 use places::storage::bookmarks;
+use places::storage::history_metadata::HistoryMetadataObservation;
 use places::types::VisitTransitionSet;
 use places::{storage, ConnectionType, PlacesApi, PlacesDb};
 use sql_support::SqlInterruptHandle;
 use std::os::raw::c_char;
 use std::sync::Arc;
 use sync_guid::Guid as SyncGuid;
+use uniffi::ViaFfi;
 
 use places::api::matcher::{self, match_url, search_frecent, SearchParams};
 
@@ -474,7 +476,7 @@ pub extern "C" fn places_get_latest_history_metadata_for_url(
     handle: u64,
     url: FfiStr<'_>,
     error: &mut ExternError,
-) -> ByteBuffer {
+) -> uniffi::RustBuffer {
     log::debug!("places_get_latest_history_metadata_for_url");
     CONNECTIONS.call_with_result(error, handle, |conn| -> places::Result<_> {
         let url = parse_url(url.as_str())?;
@@ -486,16 +488,15 @@ pub extern "C" fn places_get_latest_history_metadata_for_url(
 /// # Safety
 /// Deref pointer, thus unsafe
 #[no_mangle]
-pub unsafe extern "C" fn places_note_history_metadata_observation(
+pub extern "C" fn places_note_history_metadata_observation(
     handle: u64,
-    data: *const u8,
-    len: i32,
+    data: uniffi::RustBuffer,
     error: &mut ExternError,
 ) {
     log::debug!("places_note_history_metadata_observation");
     CONNECTIONS.call_with_result(error, handle, |conn| -> places::Result<_> {
-        let buffer = get_buffer(data, len);
-        let observation: HistoryMetadataObservation = prost::Message::decode(buffer)?;
+        let observation: HistoryMetadataObservation =
+            <HistoryMetadataObservation as uniffi::ViaFfi>::try_lift(data).unwrap();
         storage::history_metadata::apply_metadata_observation(conn, observation)?;
         Ok(())
     })
@@ -519,10 +520,10 @@ pub extern "C" fn places_get_history_metadata_between(
     start: i64,
     end: i64,
     error: &mut ExternError,
-) -> ByteBuffer {
+) -> uniffi::RustBuffer {
     log::debug!("places_get_history_metadata_between");
     CONNECTIONS.call_with_result(error, handle, |conn| -> places::Result<_> {
-        storage::history_metadata::get_between(conn, start, end)
+        Ok(storage::history_metadata::get_between(conn, start, end)?.lower())
     })
 }
 
@@ -531,10 +532,10 @@ pub extern "C" fn places_get_history_metadata_since(
     handle: u64,
     start: i64,
     error: &mut ExternError,
-) -> ByteBuffer {
+) -> uniffi::RustBuffer {
     log::debug!("places_get_history_metadata_since");
     CONNECTIONS.call_with_result(error, handle, |conn| -> places::Result<_> {
-        storage::history_metadata::get_since(conn, start)
+        Ok(storage::history_metadata::get_since(conn, start)?.lower())
     })
 }
 
@@ -544,10 +545,10 @@ pub extern "C" fn places_query_history_metadata(
     query: FfiStr<'_>,
     limit: i64,
     error: &mut ExternError,
-) -> ByteBuffer {
+) -> uniffi::RustBuffer {
     log::debug!("places_get_history_metadata_since");
     CONNECTIONS.call_with_result(error, handle, |conn| -> places::Result<_> {
-        storage::history_metadata::query(conn, query.as_str(), limit)
+        Ok(storage::history_metadata::query(conn, query.as_str(), limit)?.lower())
     })
 }
 
