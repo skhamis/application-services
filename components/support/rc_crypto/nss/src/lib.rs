@@ -12,6 +12,7 @@ pub mod ecdh;
 mod error;
 pub mod pbkdf2;
 pub mod pk11;
+pub mod pkixc;
 pub mod secport;
 pub use crate::error::{Error, ErrorKind, Result};
 pub use util::ensure_nss_initialized as ensure_initialized;

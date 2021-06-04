@@ -18,6 +18,8 @@ fn main() {
     cfg.header("blapit.h")
         .header("keyhi.h")
         .header("keythi.h")
+        .header("stdbool.h")
+        .header("mozpkix/pkixc.h")
         .header("nss.h")
         .header("pk11pub.h")
         .header("pkcs11n.h")

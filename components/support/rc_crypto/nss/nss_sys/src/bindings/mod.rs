@@ -16,6 +16,8 @@ mod pkcs11n;
 pub use pkcs11n::*;
 mod pkcs11t;
 pub use pkcs11t::*;
+mod pkixc;
+pub use pkixc::*;
 mod plarena;
 pub use plarena::*;
 mod prerror;
