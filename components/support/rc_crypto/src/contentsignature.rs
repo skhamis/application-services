@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+use std::str;
+
 use crate::error::*;
 use hex;
 
@@ -24,6 +26,44 @@ fn decode_root_hash(input: &str) -> Result<Vec<u8>> {
     Ok(result)
 }
 
+fn split_pem(pem_content: &[u8]) -> Result<Vec<Vec<u8>>> {
+    let pem_str = match str::from_utf8(pem_content) {
+        Ok(v) => v,
+        Err(e) => {
+            return Err(ErrorKind::PEMFormatError(e.to_string()).into());
+        }
+    };
+
+    let pem_lines = pem_str.split("\n");
+
+    let mut blocks: Vec<Vec<u8>> = vec![];
+    let mut block: Vec<u8> = vec![];
+    let mut read = false;
+    for line in pem_lines {
+        if line.contains("-----BEGIN CERTIFICATE") {
+            read = true;
+        } else if line.contains("-----END CERTIFICATE") {
+            read = false;
+            blocks.push(block.clone().into());
+            block.clear();
+        } else if read {
+            let data = match hex::decode(&line) {
+                Ok(v) => v,
+                Err(e) => return Err(ErrorKind::PEMFormatError(e.to_string()).into()),
+            };
+            block.extend_from_slice(&data);
+        }
+    }
+    if read {
+        return Err(ErrorKind::PEMFormatError("Missing end header".into()).into());
+    }
+    if blocks.len() == 0 {
+        return Err(ErrorKind::PEMFormatError("Missing PEM data".into()).into());
+    }
+
+    Ok(blocks)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -43,5 +83,36 @@ mod test {
                 32, 167, 174, 50, 206, 134, 28, 178, 239, 183, 15, 160, 199, 69
             ]
         );
+    }
+
+    #[test]
+    fn test_split_pem() {
+        assert!(split_pem(b"meh!").is_err());
+
+        assert!(split_pem(
+            b"-----BEGIN CERTIFICATE-----
+invalidCertificate
+-----END CERTIFICATE-----"
+        )
+        .is_err());
+
+        assert!(split_pem(
+            b"-----BEGIN CERTIFICATE-----
+bGxhIEFNTyBQcm9kdWN0aW9uIFNp
+-----BEGIN CERTIFICATE-----"
+        )
+        .is_err());
+
+        let result = split_pem(
+            b"-----BEGIN CERTIFICATE-----
+010203
+040506
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+fdfeff
+-----END CERTIFICATE-----",
+        )
+        .unwrap();
+        assert_eq!(result, vec![vec![1, 2, 3, 4, 5, 6], vec![253, 254, 255]]);
     }
 }
