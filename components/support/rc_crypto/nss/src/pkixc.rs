@@ -15,11 +15,17 @@ pub fn verify_code_signing_certificate_chain(certificates: Vec<&[u8]>, seconds_s
         cert_lens.push(certificate.len() as u16);
     }
 
+    // I cannot figure out how to get rid of `mut` here, because of
+    // ``const uint8_t** certificates`` param in nss_sys.
+    let mut p_certificates: Vec<_> = certificates.iter()
+        .map(|c| c.as_ptr())
+        .collect();
+
     let mut out: PRErrorCode = 0;
 
     let result = unsafe {
         nss_sys::VerifyCodeSigningCertificateChain(
-            certificates.as_ptr(),
+            p_certificates.as_mut_ptr(),
             cert_lens.as_ptr(),
             certificates.len(),
             seconds_since_epoch,

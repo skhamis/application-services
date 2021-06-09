@@ -6,7 +6,7 @@
 
  extern "C" {
     pub fn VerifyCodeSigningCertificateChain(
-        certificates: *mut *const u8,
+        certificates: *mut *const u8, // Why mut? ``*mut *const u8`` --> ``const uint8_t **``
         certificateLengths: *const u16,
         numCertificates: size_t,
         secondsSinceEpoch: u64,

@@ -6,6 +6,7 @@ use std::str;
 
 use crate::error::*;
 use hex;
+use nss;
 
 fn decode_root_hash(input: &str) -> Result<Vec<u8>> {
     let bytes_hex = input.split(":");
@@ -64,6 +65,33 @@ fn split_pem(pem_content: &[u8]) -> Result<Vec<Vec<u8>>> {
     Ok(blocks)
 }
 
+pub fn verify(
+    _input: &[u8],
+    _signature: &[u8],
+    pem_bytes: &[u8],
+    seconds_since_epoch: u64,
+    root_sha256_hash: &str,
+    hostname: &str,
+) -> Result<()> {
+    let certificates = split_pem(&pem_bytes)?;
+
+    let mut certificates_slices: Vec<&[u8]> = vec![];
+    for certificate in &certificates {
+        certificates_slices.push(certificate);
+    }
+
+    let root_hash_bytes = decode_root_hash(&root_sha256_hash)?;
+
+    nss::pkixc::verify_code_signing_certificate_chain(
+        certificates_slices,
+        seconds_since_epoch,
+        &root_hash_bytes,
+        hostname,
+    )?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -114,5 +142,20 @@ fdfeff
         )
         .unwrap();
         assert_eq!(result, vec![vec![1, 2, 3, 4, 5, 6], vec![253, 254, 255]]);
+    }
+
+    #[test]
+    fn test_verify() {
+        assert!(verify(
+            b"msg",
+            b"sig",
+            b"-----BEGIN CERTIFICATE-----
+fdfeff
+-----END CERTIFICATE-----",
+            42,
+            ROOT_HASH,
+            "remotesettings.firefox.com",
+        )
+        .is_err());
     }
 }
