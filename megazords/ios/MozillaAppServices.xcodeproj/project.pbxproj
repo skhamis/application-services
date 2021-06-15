@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1BDFCD842674495500C99F85 /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = 1BDFCD832674495500C99F85 /* SwiftKeychainWrapper */; };
+		1BDFCD862674495A00C99F85 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 1BDFCD852674495A00C99F85 /* SwiftProtobuf */; };
 		1BE78F46265322DB008B9A45 /* uniffi_logins-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 1BE78F44265322DB008B9A45 /* uniffi_logins-Bridging-Header.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		1BE78F4926532325008B9A45 /* logins.udl in Sources */ = {isa = PBXBuildFile; fileRef = 1BE78F4826532325008B9A45 /* logins.udl */; };
 		394A807825EE951D00FAF26F /* uniffi_nimbus-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 394A807625EE951D00FAF26F /* uniffi_nimbus-Bridging-Header.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -63,8 +65,6 @@
 		C852EED6220A29FE00A6E79A /* LoginsStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C852EECD220A29FE00A6E79A /* LoginsStorage.swift */; };
 		C852EEEF220A2E9400A6E79A /* libmegazord_ios.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C852EEEE220A2E9400A6E79A /* libmegazord_ios.a */; };
 		CD02CF3922568BCC00124DA2 /* SyncUnlockInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD02CF3822568BCC00124DA2 /* SyncUnlockInfo.swift */; };
-		CD440A422238A08E003F004B /* SwiftProtobuf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB7DE84C2214D30B00E7CF17 /* SwiftProtobuf.framework */; };
-		CD440A452238A703003F004B /* SwiftProtobuf.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = EB7DE84C2214D30B00E7CF17 /* SwiftProtobuf.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CD4CFDD3221DFA5100EB3B33 /* LogTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD4CFDD2221DFA5100EB3B33 /* LogTest.swift */; };
 		CD85A45422361E890099BFA9 /* Places.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD85A44922361E880099BFA9 /* Places.swift */; };
 		CD85A45522361E890099BFA9 /* RustPlacesAPI.h in Headers */ = {isa = PBXBuildFile; fileRef = CD85A44A22361E880099BFA9 /* RustPlacesAPI.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -86,8 +86,6 @@
 		CE3A2F38225BDE5300EA569C /* PlacesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3A2F37225BDE5300EA569C /* PlacesTests.swift */; };
 		CE58B2F8242D54340089F091 /* RustViaductFFI.h in Headers */ = {isa = PBXBuildFile; fileRef = CE58B2F7242D54340089F091 /* RustViaductFFI.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		CE90D1BB23D7570A00FD9A5F /* FxAccountManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE34DB3C23D0C9640027AD63 /* FxAccountManagerTests.swift */; };
-		CE96459923D7A77500B662F8 /* SwiftKeychainWrapper.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CE96459823D7A77500B662F8 /* SwiftKeychainWrapper.framework */; };
-		CE96459C23D7A7D500B662F8 /* SwiftKeychainWrapper.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = CE96459823D7A77500B662F8 /* SwiftKeychainWrapper.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CE9FFA13242D4E7B0011029E /* Viaduct.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9FFA12242D4E7B0011029E /* Viaduct.swift */; };
 		CEB1A06823D8A42D005BD4DD /* FxAccountMocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEB1A06723D8A42D005BD4DD /* FxAccountMocks.swift */; };
 		CED443CD23CD13E5007E5FA6 /* FxAccountDeviceConstellation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED443CC23CD13E5007E5FA6 /* FxAccountDeviceConstellation.swift */; };
@@ -95,7 +93,6 @@
 		CEFB1EB022EF708B0001E20F /* ResultError.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFB1EAF22EF708B0001E20F /* ResultError.swift */; };
 		D05434A1225680D900FDE4EF /* MozillaAppServices.h in Headers */ = {isa = PBXBuildFile; fileRef = C852EEF2220A3C6800A6E79A /* MozillaAppServices.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D9FA8C542644A170008344BF /* HistoryMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9FA8C532644A170008344BF /* HistoryMetadata.swift */; };
-		EB7DE84D2214D30B00E7CF17 /* SwiftProtobuf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EB7DE84C2214D30B00E7CF17 /* SwiftProtobuf.framework */; };
 		EB879D7F221234EB00753DC9 /* MozillaAppServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CE9D202020914D0D00F1C8FA /* MozillaAppServices.framework */; };
 		EB879D8B22123FD900753DC9 /* LoginsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB879D8A22123FD900753DC9 /* LoginsTests.swift */; };
 /* End PBXBuildFile section */
@@ -119,7 +116,7 @@
 			isa = PBXBuildRule;
 			compilerSpec = com.apple.compilers.proxy.script;
 			filePatterns = "*.proto";
-			fileType = pattern.proxy;
+			fileType = sourcecode.protobuf;
 			inputFiles = (
 			);
 			isEditable = 1;
@@ -147,8 +144,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				CE96459C23D7A7D500B662F8 /* SwiftKeychainWrapper.framework in CopyFiles */,
-				CD440A452238A703003F004B /* SwiftProtobuf.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -259,10 +254,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CE96459923D7A77500B662F8 /* SwiftKeychainWrapper.framework in Frameworks */,
 				C852EEEF220A2E9400A6E79A /* libmegazord_ios.a in Frameworks */,
-				EB7DE84D2214D30B00E7CF17 /* SwiftProtobuf.framework in Frameworks */,
 				C852EE9E220A283200A6E79A /* libsqlcipher.a in Frameworks */,
+				1BDFCD842674495500C99F85 /* SwiftKeychainWrapper in Frameworks */,
+				1BDFCD862674495A00C99F85 /* SwiftProtobuf in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -270,7 +265,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CD440A422238A08E003F004B /* SwiftProtobuf.framework in Frameworks */,
 				EB879D7F221234EB00753DC9 /* MozillaAppServices.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -654,8 +648,14 @@
 				EB7DE84A2214D28C00E7CF17 /* PBXBuildRule */,
 			);
 			dependencies = (
+				1B9B8EF9267433B100C8A918 /* PBXTargetDependency */,
+				1B9B8EF7267433AC00C8A918 /* PBXTargetDependency */,
 			);
 			name = MozillaAppServices;
+			packageProductDependencies = (
+				1BDFCD832674495500C99F85 /* SwiftKeychainWrapper */,
+				1BDFCD852674495A00C99F85 /* SwiftProtobuf */,
+			);
 			productName = Logins;
 			productReference = CE9D202020914D0D00F1C8FA /* MozillaAppServices.framework */;
 			productType = "com.apple.product-type.framework";
@@ -672,6 +672,8 @@
 			buildRules = (
 			);
 			dependencies = (
+				1B5069892677DB160052F03F /* PBXTargetDependency */,
+				1B5069872677DB110052F03F /* PBXTargetDependency */,
 				EB879D81221234EB00753DC9 /* PBXTargetDependency */,
 			);
 			name = MozillaAppServicesTests;
@@ -686,7 +688,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 1010;
-				LastUpgradeCheck = 1240;
+				LastUpgradeCheck = 1250;
 				ORGANIZATIONNAME = Mozilla;
 				TargetAttributes = {
 					CE9D201F20914D0D00F1C8FA = {
@@ -707,6 +709,10 @@
 				Base,
 			);
 			mainGroup = CE9D201620914D0D00F1C8FA;
+			packageReferences = (
+				1B20DE6226741545002FC4FA /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */,
+				1B20DE65267415D5002FC4FA /* XCRemoteSwiftPackageReference "swift-protobuf" */,
+			);
 			productRefGroup = CE9D202120914D0D00F1C8FA /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -865,6 +871,22 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		1B5069872677DB110052F03F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 1B5069862677DB110052F03F /* SwiftKeychainWrapper */;
+		};
+		1B5069892677DB160052F03F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 1B5069882677DB160052F03F /* SwiftProtobuf */;
+		};
+		1B9B8EF7267433AC00C8A918 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 1B9B8EF6267433AC00C8A918 /* SwiftKeychainWrapper */;
+		};
+		1B9B8EF9267433B100C8A918 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 1B9B8EF8267433B100C8A918 /* SwiftProtobuf */;
+		};
 		EB879D81221234EB00753DC9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = CE9D201F20914D0D00F1C8FA /* MozillaAppServices */;
@@ -877,6 +899,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = EBA8770721F5FB9A004F63F0 /* debug.xcconfig */;
 			buildSettings = {
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 			};
 			name = Debug;
 		};
@@ -884,6 +908,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = EBA8770821F5FB9A004F63F0 /* release.xcconfig */;
 			buildSettings = {
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
 		};
@@ -964,6 +991,58 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1B20DE6226741545002FC4FA /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jrendel/SwiftKeychainWrapper";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.1;
+			};
+		};
+		1B20DE65267415D5002FC4FA /* XCRemoteSwiftPackageReference "swift-protobuf" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-protobuf.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.17.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1B5069862677DB110052F03F /* SwiftKeychainWrapper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B20DE6226741545002FC4FA /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
+			productName = SwiftKeychainWrapper;
+		};
+		1B5069882677DB160052F03F /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B20DE65267415D5002FC4FA /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
+		};
+		1B9B8EF6267433AC00C8A918 /* SwiftKeychainWrapper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B20DE6226741545002FC4FA /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
+			productName = SwiftKeychainWrapper;
+		};
+		1B9B8EF8267433B100C8A918 /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B20DE65267415D5002FC4FA /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
+		};
+		1BDFCD832674495500C99F85 /* SwiftKeychainWrapper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B20DE6226741545002FC4FA /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
+			productName = SwiftKeychainWrapper;
+		};
+		1BDFCD852674495A00C99F85 /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B20DE65267415D5002FC4FA /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CE9D201720914D0D00F1C8FA /* Project object */;
 }
