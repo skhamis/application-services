@@ -268,34 +268,34 @@ class PlacesTests: XCTestCase {
             searchTerm: nil,
             referrerUrl: nil
         )
-        _ = try! db.noteHistoryMetadataObservation(key: metaKey1, observation: HistoryMetadataObservation.documentTypeObservation(DocumentType.media))
+        _ = try! db.noteHistoryMetadataObservationDocumentType(key: metaKey1, documentType: DocumentType.media)
 
         XCTAssertEqual(1, try! db.getHistoryMetadataSince(since: beginning).count)
 
         var dbMeta = try! db.getLatestHistoryMetadataForUrl(url: "http://www.mozilla.org")
         XCTAssertNotNil(dbMeta)
-        XCTAssertEqual("http://www.mozilla.org/", dbMeta!.key.url)
+        XCTAssertEqual("http://www.mozilla.org/", dbMeta!.url)
         XCTAssertEqual(nil, dbMeta!.title)
-        XCTAssertEqual(nil, dbMeta!.key.referrerUrl)
-        XCTAssertEqual(nil, dbMeta!.key.searchTerm)
+        XCTAssertEqual(nil, dbMeta!.referrerUrl)
+        XCTAssertEqual(nil, dbMeta!.searchTerm)
         XCTAssertEqual(DocumentType.media, dbMeta!.documentType)
         XCTAssertEqual(0, dbMeta!.totalViewTime)
 
         XCTAssertEqual(1, try! db.getHistoryMetadataSince(since: beginning).count)
 
-        _ = try! db.noteHistoryMetadataObservation(key: metaKey1, observation: HistoryMetadataObservation.viewTimeObservation(1337))
+        _ = try! db.noteHistoryMetadataObservationViewTime(key: metaKey1, viewTime: 1337)
         dbMeta = try! db.getLatestHistoryMetadataForUrl(url: "http://www.mozilla.org")
         XCTAssertNotNil(dbMeta)
-        XCTAssertEqual("http://www.mozilla.org/", dbMeta!.key.url)
+        XCTAssertEqual("http://www.mozilla.org/", dbMeta!.url)
         XCTAssertEqual(nil, dbMeta!.title)
-        XCTAssertEqual(nil, dbMeta!.key.referrerUrl)
-        XCTAssertEqual(nil, dbMeta!.key.searchTerm)
+        XCTAssertEqual(nil, dbMeta!.referrerUrl)
+        XCTAssertEqual(nil, dbMeta!.searchTerm)
         XCTAssertEqual(DocumentType.media, dbMeta!.documentType)
         XCTAssertEqual(1337, dbMeta!.totalViewTime)
 
         XCTAssertEqual(1, try! db.getHistoryMetadataSince(since: beginning).count)
 
-        _ = try! db.noteHistoryMetadataObservation(key: metaKey1, observation: HistoryMetadataObservation.viewTimeObservation(3))
+        _ = try! db.noteHistoryMetadataObservationViewTime(key: metaKey1, viewTime: 3)
         dbMeta = try! db.getLatestHistoryMetadataForUrl(url: "http://www.mozilla.org")
         XCTAssertEqual(1340, dbMeta!.totalViewTime)
 
@@ -307,29 +307,29 @@ class PlacesTests: XCTestCase {
             searchTerm: "another firefox",
             referrerUrl: "https://www.google.com/search?client=firefox-b-d&q=another+firefox"
         )
-        _ = try! db.noteHistoryMetadataObservation(key: metaKey2, observation: HistoryMetadataObservation.titleObservation("some title"))
+        _ = try! db.noteHistoryMetadataObservationTitle(key: metaKey2, title: "some title")
 
         XCTAssertEqual(1, try! db.getHistoryMetadataSince(since: afterLastMeta1Update).count)
         XCTAssertEqual(2, try! db.getHistoryMetadataSince(since: beginning).count)
 
         var dbMeta2 = try! db.getLatestHistoryMetadataForUrl(url: "http://www.mozilla.org/another/")
         XCTAssertNotNil(dbMeta2)
-        XCTAssertEqual("http://www.mozilla.org/another/", dbMeta2!.key.url)
+        XCTAssertEqual("http://www.mozilla.org/another/", dbMeta2!.url)
         XCTAssertEqual("some title", dbMeta2!.title)
-        XCTAssertEqual("https://www.google.com/search?client=firefox-b-d&q=another+firefox", dbMeta2!.key.referrerUrl)
-        XCTAssertEqual("another firefox", dbMeta2!.key.searchTerm)
+        XCTAssertEqual("https://www.google.com/search?client=firefox-b-d&q=another+firefox", dbMeta2!.referrerUrl)
+        XCTAssertEqual("another firefox", dbMeta2!.searchTerm)
         XCTAssertEqual(DocumentType.regular, dbMeta2!.documentType)
         XCTAssertEqual(0, dbMeta2!.totalViewTime)
 
-        _ = try! db.noteHistoryMetadataObservation(key: metaKey2, observation: HistoryMetadataObservation.documentTypeObservation(DocumentType.regular))
-        _ = try! db.noteHistoryMetadataObservation(key: metaKey2, observation: HistoryMetadataObservation.titleObservation("Some Title"))
-        _ = try! db.noteHistoryMetadataObservation(key: metaKey2, observation: HistoryMetadataObservation.viewTimeObservation(52345))
+        _ = try! db.noteHistoryMetadataObservationDocumentType(key: metaKey2, documentType: DocumentType.regular)
+        _ = try! db.noteHistoryMetadataObservationTitle(key: metaKey2, title: "Some Title")
+        _ = try! db.noteHistoryMetadataObservationViewTime(key: metaKey2, viewTime: 52345)
         dbMeta2 = try! db.getLatestHistoryMetadataForUrl(url: "http://www.mozilla.org/another/")
         XCTAssertNotNil(dbMeta2)
-        XCTAssertEqual("http://www.mozilla.org/another/", dbMeta2!.key.url)
+        XCTAssertEqual("http://www.mozilla.org/another/", dbMeta2!.url)
         XCTAssertEqual("some title", dbMeta2!.title) // NB: subsequent title updates are currently ignored
-        XCTAssertEqual("https://www.google.com/search?client=firefox-b-d&q=another+firefox", dbMeta2!.key.referrerUrl)
-        XCTAssertEqual("another firefox", dbMeta2!.key.searchTerm)
+        XCTAssertEqual("https://www.google.com/search?client=firefox-b-d&q=another+firefox", dbMeta2!.referrerUrl)
+        XCTAssertEqual("another firefox", dbMeta2!.searchTerm)
         XCTAssertEqual(DocumentType.regular, dbMeta2!.documentType)
         XCTAssertEqual(52345, dbMeta2!.totalViewTime)
 
@@ -356,7 +356,7 @@ class PlacesTests: XCTestCase {
         try! db.deleteHistoryMetadaOlderThan(olderThan: afterLastMeta1Update)
         list = try! db.getHistoryMetadataSince(since: beginning)
         XCTAssertEqual(1, list.count)
-        XCTAssertEqual("http://www.mozilla.org/another/", list[0].key.url)
+        XCTAssertEqual("http://www.mozilla.org/another/", list[0].url)
         try! db.deleteHistoryMetadaOlderThan(olderThan: afterLastMeta2Update)
         XCTAssertEqual(0, try! db.getHistoryMetadataSince(since: beginning).count)
     }

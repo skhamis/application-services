@@ -7,9 +7,109 @@
 use crate::error::{Error, ErrorKind, InvalidPlaceInfo};
 use crate::msg_types;
 use crate::storage::history_metadata::{DocumentType, HistoryMetadata, HistoryMetadataObservation};
+use crate::{PlacesApi, PlacesDb};
 use ffi_support::{
-    implement_into_ffi_by_delegation, implement_into_ffi_by_protobuf, ErrorCode, ExternError,
+    implement_into_ffi_by_delegation, implement_into_ffi_by_protobuf, ConcurrentHandleMap,
+    ErrorCode, ExternError, Handle,
 };
+use std::sync::Arc;
+
+lazy_static::lazy_static! {
+    pub static ref APIS: ConcurrentHandleMap<Arc<PlacesApi>> = ConcurrentHandleMap::new();
+    pub static ref CONNECTIONS: ConcurrentHandleMap<PlacesDb> = ConcurrentHandleMap::new();
+}
+
+#[derive(Debug)]
+enum PlacesError {
+    Oops(ExternError),
+}
+
+impl PlacesError {
+    fn to_string(&self) -> String {
+        "oops".to_string()
+    }
+}
+impl From<ExternError> for PlacesError {
+    fn from(e: ExternError) -> PlacesError {
+        PlacesError::Oops(e)
+    }
+}
+
+fn parse_url(url: &str) -> crate::Result<url::Url> {
+    Ok(url::Url::parse(url)?)
+}
+
+fn places_get_latest_history_metadata_for_url(
+    handle: u64,
+    url: String,
+) -> Result<Option<HistoryMetadata>, ExternError> {
+    CONNECTIONS.get(
+        Handle::from_u64(handle)?,
+        |conn| -> Result<_, ExternError> {
+            let url = parse_url(url.as_str())?;
+            let metadata = crate::storage::history_metadata::get_latest_for_url(conn, &url)?;
+            Ok(metadata)
+        },
+    )
+}
+
+fn places_get_history_metadata_between(
+    handle: u64,
+    start: i64,
+    end: i64,
+) -> Result<Vec<HistoryMetadata>, ExternError> {
+    log::debug!("places_get_history_metadata_between");
+    CONNECTIONS.get(
+        Handle::from_u64(handle)?,
+        |conn| -> Result<_, ExternError> {
+            let between = crate::storage::history_metadata::get_between(conn, start, end)?;
+            Ok(between)
+        },
+    )
+}
+
+fn places_get_history_metadata_since(
+    handle: u64,
+    start: i64,
+) -> Result<Vec<HistoryMetadata>, ExternError> {
+    log::debug!("places_get_history_metadata_since");
+    CONNECTIONS.get(
+        Handle::from_u64(handle)?,
+        |conn| -> Result<_, ExternError> {
+            let since = crate::storage::history_metadata::get_since(conn, start)?;
+            Ok(since)
+        },
+    )
+}
+
+fn places_query_history_metadata(
+    handle: u64,
+    query: String,
+    limit: i64,
+) -> Result<Vec<HistoryMetadata>, ExternError> {
+    log::debug!("places_get_history_metadata_since");
+    CONNECTIONS.get(
+        Handle::from_u64(handle)?,
+        |conn| -> Result<_, ExternError> {
+            let metadata = crate::storage::history_metadata::query(conn, query.as_str(), limit)?;
+            Ok(metadata)
+        },
+    )
+}
+
+fn places_note_history_metadata_observation(
+    handle: u64,
+    data: HistoryMetadataObservation,
+) -> Result<(), ExternError> {
+    log::debug!("places_note_history_metadata_observation");
+    CONNECTIONS.get(
+        Handle::from_u64(handle)?,
+        |conn| -> Result<_, ExternError> {
+            crate::storage::history_metadata::apply_metadata_observation(conn, data)?;
+            Ok(())
+        },
+    )
+}
 
 pub mod error_codes {
     // Note: 0 (success) and -1 (panic) are reserved by ffi_support

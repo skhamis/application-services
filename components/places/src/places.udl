@@ -2,7 +2,22 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-namespace places {};
+namespace places {
+    [Throws=PlacesError]
+    HistoryMetadata? places_get_latest_history_metadata_for_url(u64 handle, string url);
+
+    [Throws=PlacesError]
+    sequence<HistoryMetadata> places_get_history_metadata_between(u64 handle, i64 start, i64 end);
+
+    [Throws=PlacesError]
+    sequence<HistoryMetadata> places_get_history_metadata_since(u64 handle, i64 start);
+
+    [Throws=PlacesError]
+    sequence<HistoryMetadata> places_query_history_metadata(u64 handle, string query, i64 limit);
+
+    [Throws=PlacesError]
+    void places_note_history_metadata_observation(u64 handle, HistoryMetadataObservation data);
+};
 
 // Some kind of namespacing for uniffi would be ideal. Multiple udl/macro defns?
 // Everything below is from the crate::storage::history_metadata module...
@@ -39,4 +54,10 @@ dictionary HistoryMetadata {
 // Exists just to convince uniffi to generate `liftSequence*` helpers!
 dictionary Dummy {
     sequence<HistoryMetadata>? md;
+};
+
+
+[Error]
+enum PlacesError {
+    "Oops"
 };
