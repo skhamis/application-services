@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1BDFCD842674495500C99F85 /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = 1BDFCD832674495500C99F85 /* SwiftKeychainWrapper */; };
-		1BDFCD862674495A00C99F85 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 1BDFCD852674495A00C99F85 /* SwiftProtobuf */; };
+		1B376D23267AC87100CCF632 /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = 1B376D22267AC87100CCF632 /* SwiftKeychainWrapper */; };
+		1B376D26267AC88F00CCF632 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 1B376D25267AC88F00CCF632 /* SwiftProtobuf */; };
 		1BE78F46265322DB008B9A45 /* uniffi_logins-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 1BE78F44265322DB008B9A45 /* uniffi_logins-Bridging-Header.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		1BE78F4926532325008B9A45 /* logins.udl in Sources */ = {isa = PBXBuildFile; fileRef = 1BE78F4826532325008B9A45 /* logins.udl */; };
 		394A807825EE951D00FAF26F /* uniffi_nimbus-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 394A807625EE951D00FAF26F /* uniffi_nimbus-Bridging-Header.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -256,8 +256,8 @@
 			files = (
 				C852EEEF220A2E9400A6E79A /* libmegazord_ios.a in Frameworks */,
 				C852EE9E220A283200A6E79A /* libsqlcipher.a in Frameworks */,
-				1BDFCD842674495500C99F85 /* SwiftKeychainWrapper in Frameworks */,
-				1BDFCD862674495A00C99F85 /* SwiftProtobuf in Frameworks */,
+				1B376D23267AC87100CCF632 /* SwiftKeychainWrapper in Frameworks */,
+				1B376D26267AC88F00CCF632 /* SwiftProtobuf in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -648,13 +648,13 @@
 				EB7DE84A2214D28C00E7CF17 /* PBXBuildRule */,
 			);
 			dependencies = (
-				1B9B8EF9267433B100C8A918 /* PBXTargetDependency */,
-				1B9B8EF7267433AC00C8A918 /* PBXTargetDependency */,
+				1B376D2C267AC8A100CCF632 /* PBXTargetDependency */,
+				1B376D2A267AC89E00CCF632 /* PBXTargetDependency */,
 			);
 			name = MozillaAppServices;
 			packageProductDependencies = (
-				1BDFCD832674495500C99F85 /* SwiftKeychainWrapper */,
-				1BDFCD852674495A00C99F85 /* SwiftProtobuf */,
+				1B376D22267AC87100CCF632 /* SwiftKeychainWrapper */,
+				1B376D25267AC88F00CCF632 /* SwiftProtobuf */,
 			);
 			productName = Logins;
 			productReference = CE9D202020914D0D00F1C8FA /* MozillaAppServices.framework */;
@@ -710,8 +710,8 @@
 			);
 			mainGroup = CE9D201620914D0D00F1C8FA;
 			packageReferences = (
-				1B20DE6226741545002FC4FA /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */,
-				1B20DE65267415D5002FC4FA /* XCRemoteSwiftPackageReference "swift-protobuf" */,
+				1B376D21267AC87100CCF632 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */,
+				1B376D24267AC88F00CCF632 /* XCRemoteSwiftPackageReference "swift-protobuf" */,
 			);
 			productRefGroup = CE9D202120914D0D00F1C8FA /* Products */;
 			projectDirPath = "";
@@ -871,6 +871,14 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		1B376D2A267AC89E00CCF632 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 1B376D29267AC89E00CCF632 /* SwiftKeychainWrapper */;
+		};
+		1B376D2C267AC8A100CCF632 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 1B376D2B267AC8A100CCF632 /* SwiftProtobuf */;
+		};
 		1B5069872677DB110052F03F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			productRef = 1B5069862677DB110052F03F /* SwiftKeychainWrapper */;
@@ -878,14 +886,6 @@
 		1B5069892677DB160052F03F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			productRef = 1B5069882677DB160052F03F /* SwiftProtobuf */;
-		};
-		1B9B8EF7267433AC00C8A918 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 1B9B8EF6267433AC00C8A918 /* SwiftKeychainWrapper */;
-		};
-		1B9B8EF9267433B100C8A918 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 1B9B8EF8267433B100C8A918 /* SwiftProtobuf */;
 		};
 		EB879D81221234EB00753DC9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1009,35 +1009,51 @@
 				minimumVersion = 1.17.0;
 			};
 		};
+		1B376D21267AC87100CCF632 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jrendel/SwiftKeychainWrapper";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.1;
+			};
+		};
+		1B376D24267AC88F00CCF632 /* XCRemoteSwiftPackageReference "swift-protobuf" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-protobuf";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.17.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		1B376D22267AC87100CCF632 /* SwiftKeychainWrapper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B376D21267AC87100CCF632 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
+			productName = SwiftKeychainWrapper;
+		};
+		1B376D25267AC88F00CCF632 /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B376D24267AC88F00CCF632 /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
+		};
+		1B376D29267AC89E00CCF632 /* SwiftKeychainWrapper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B376D21267AC87100CCF632 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
+			productName = SwiftKeychainWrapper;
+		};
+		1B376D2B267AC8A100CCF632 /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1B376D24267AC88F00CCF632 /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
+		};
 		1B5069862677DB110052F03F /* SwiftKeychainWrapper */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 1B20DE6226741545002FC4FA /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
 			productName = SwiftKeychainWrapper;
 		};
 		1B5069882677DB160052F03F /* SwiftProtobuf */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 1B20DE65267415D5002FC4FA /* XCRemoteSwiftPackageReference "swift-protobuf" */;
-			productName = SwiftProtobuf;
-		};
-		1B9B8EF6267433AC00C8A918 /* SwiftKeychainWrapper */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 1B20DE6226741545002FC4FA /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
-			productName = SwiftKeychainWrapper;
-		};
-		1B9B8EF8267433B100C8A918 /* SwiftProtobuf */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 1B20DE65267415D5002FC4FA /* XCRemoteSwiftPackageReference "swift-protobuf" */;
-			productName = SwiftProtobuf;
-		};
-		1BDFCD832674495500C99F85 /* SwiftKeychainWrapper */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 1B20DE6226741545002FC4FA /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
-			productName = SwiftKeychainWrapper;
-		};
-		1BDFCD852674495A00C99F85 /* SwiftProtobuf */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 1B20DE65267415D5002FC4FA /* XCRemoteSwiftPackageReference "swift-protobuf" */;
 			productName = SwiftProtobuf;

@@ -5,6 +5,7 @@ set -eu
 CONFIGURATION="Release"
 FRAMEWORK_NAME="MozillaAppServices.framework.zip"
 ARCHIVE=true
+CARTHAGE="$('which carthage')"
 
 while [[ "$#" -gt 0 ]]; do case $1 in
   --configuration) CONFIGURATION="$2"; shift;shift;;
@@ -18,10 +19,12 @@ set -vx
 XCODE_XCCONFIG_FILE=$(pwd)/xcconfig/xcode-12-fix-carthage-lipo.xcconfig
 export XCODE_XCCONFIG_FILE
 
-carthage bootstrap --platform iOS --cache-builds
+
+
+CARTHAGE bootstrap --platform iOS --cache-builds
 
 set -o pipefail && \
-carthage build --no-skip-current --platform iOS --verbose --configuration "${CONFIGURATION}" --cache-builds | \
+CARTHAGE build --no-skip-current --platform iOS --verbose --configuration "${CONFIGURATION}" --cache-builds | \
 tee raw_xcodebuild.log | \
 xcpretty
 

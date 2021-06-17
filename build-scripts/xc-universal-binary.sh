@@ -75,16 +75,16 @@ NEED_LIPO=
 
 # if the universal binary doesnt exist, or if it's older than the static libs,
 # we need to run `lipo` again.
-if [[ ! -f "${UNIVERSAL_BINARY}" ]]; then
-    NEED_LIPO=1
-elif [[ "$(stat -f "%m" "${TARGETDIR}/x86_64-apple-ios/${RELDIR}/${STATIC_LIB_NAME}")" -gt "$(stat -f "%m" "${UNIVERSAL_BINARY}")" ]]; then
-    NEED_LIPO=1
-elif [[ "$(stat -f "%m" "${TARGETDIR}/aarch64-apple-ios/${RELDIR}/${STATIC_LIB_NAME}")" -gt "$(stat -f "%m" "${UNIVERSAL_BINARY}")" ]]; then
-    NEED_LIPO=1
-fi
-if [[ "${NEED_LIPO}" = "1" ]]; then
-    mkdir -p "${TARGETDIR}/universal/${RELDIR}"
-    lipo -create -output "${UNIVERSAL_BINARY}" \
-        "${TARGETDIR}/x86_64-apple-ios/${RELDIR}/${STATIC_LIB_NAME}" \
-        "${TARGETDIR}/aarch64-apple-ios/${RELDIR}/${STATIC_LIB_NAME}"
-fi
+# if [[ ! -f "${UNIVERSAL_BINARY}" ]]; then
+#     NEED_LIPO=1
+# elif [[ "$(stat -f "%m" "${TARGETDIR}/x86_64-apple-ios/${RELDIR}/${STATIC_LIB_NAME}")" -gt "$(stat -f "%m" "${UNIVERSAL_BINARY}")" ]]; then
+#     NEED_LIPO=1
+# elif [[ "$(stat -f "%m" "${TARGETDIR}/aarch64-apple-ios/${RELDIR}/${STATIC_LIB_NAME}")" -gt "$(stat -f "%m" "${UNIVERSAL_BINARY}")" ]]; then
+#     NEED_LIPO=1
+# fi
+# if [[ "${NEED_LIPO}" = "1" ]]; then
+#     mkdir -p "${TARGETDIR}/universal/${RELDIR}"
+#     lipo -create -output "${UNIVERSAL_BINARY}" \
+#         "${TARGETDIR}/x86_64-apple-ios/${RELDIR}/${STATIC_LIB_NAME}" \
+#         "${TARGETDIR}/aarch64-apple-ios/${RELDIR}/${STATIC_LIB_NAME}"
+# fi
