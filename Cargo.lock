@@ -1400,6 +1400,17 @@ name = "interrupt-support"
 version = "0.1.0"
 
 [[package]]
+name = "ios_rust"
+version = "0.1.0"
+dependencies = [
+ "crashtest",
+ "nimbus-sdk",
+ "rc_log_ffi",
+ "viaduct",
+ "viaduct-reqwest",
+]
+
+[[package]]
 name = "ipnet"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
