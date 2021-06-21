@@ -59,5 +59,14 @@ dictionary Dummy {
 
 [Error]
 enum PlacesError {
-    "Oops"
+    "UrlParseFailed",
+    "PlacesConnectionBusy",
+    "OperationInterrupted",
+    "BookmarksCorruption",
+    "InvalidParent",
+    "UnknownBookmarkItem",
+    "UrlTooLong",
+    "InvalidBookmarkUpdate",
+    "CannotUpdateRoot",
+    "UnexpectedError",
 };

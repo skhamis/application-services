@@ -19,19 +19,73 @@ lazy_static::lazy_static! {
     pub static ref CONNECTIONS: ConcurrentHandleMap<PlacesDb> = ConcurrentHandleMap::new();
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 enum PlacesError {
-    Oops(ExternError),
+    #[error("Unexpected Error")]
+    UnexpectedError(ExternError),
+
+    #[error("URL parse failed")]
+    UrlParseFailed(ExternError),
+
+    #[error("Connection busy")]
+    PlacesConnectionBusy(ExternError),
+
+    #[error("Operation Interrupted")]
+    OperationInterrupted(ExternError),
+
+    #[error("Bookmarks was corrupted")]
+    BookmarksCorruption(ExternError),
+
+    #[error("Invalid Parent")]
+    InvalidParent(ExternError),
+
+    #[error("Unknown Bookmark")]
+    UnknownBookmarkItem(ExternError),
+
+    #[error("URL too long")]
+    UrlTooLong(ExternError),
+
+    #[error("Invalid Bookmark update")]
+    InvalidBookmarkUpdate(ExternError),
+
+    #[error("Cannot update root")]
+    CannotUpdateRoot(ExternError),
 }
 
-impl PlacesError {
-    fn to_string(&self) -> String {
-        "oops".to_string()
-    }
-}
+// impl PlacesError {
+//     fn to_string(&self) -> &'static str {
+//         match &self {
+//             PlacesError::UnexpectedError(_) => "PlacesError::UnexpectedError",
+//             PlacesError::UrlParseFailed(_) => "PlacesError::UrlParseFailed",
+//             PlacesError::PlacesConnectionBusy(_) => "PlacesError::PlacesConnectionBusy",
+//             PlacesError::OperationInterrupted(_) => "PlacesError::OperationInterrupted",
+//             PlacesError::BookmarksCorruption(_) => "PlacesError::BookmarksCorruption",
+//             PlacesError::InvalidParent(_) => "PlacesError::InvalidParent",
+//             PlacesError::UnknownBookmarkItem(_) => "PlacesError::UnknownBookmarkItem",
+//             PlacesError::UrlTooLong(_) => "PlacesError::UrlTooLong",
+//             PlacesError::InvalidBookmarkUpdate(_) => "PlacesError::InvalidBookmarkUpdate",
+//             PlacesError::CannotUpdateRoot(_) => "PlacesError::CannotUpdateRoot",
+//         }
+//     }
+// }
+
 impl From<ExternError> for PlacesError {
     fn from(e: ExternError) -> PlacesError {
-        PlacesError::Oops(e)
+        match e.get_code().code() {
+            error_codes::DATABASE_BUSY => PlacesError::PlacesConnectionBusy(e),
+            // Look into this one
+            error_codes::DATABASE_CORRUPT => PlacesError::BookmarksCorruption(e),
+            error_codes::DATABASE_INTERRUPTED => PlacesError::OperationInterrupted(e),
+            error_codes::INVALID_PLACE_INFO_CANNOT_UPDATE_ROOT => PlacesError::CannotUpdateRoot(e),
+            // Look into this one
+            error_codes::INVALID_PLACE_INFO_ILLEGAL_CHANGE => PlacesError::InvalidBookmarkUpdate(e),
+            error_codes::INVALID_PLACE_INFO_INVALID_PARENT => PlacesError::InvalidParent(e),
+            // Look into this one
+            error_codes::INVALID_PLACE_INFO_NO_ITEM => PlacesError::UnknownBookmarkItem(e),
+            error_codes::INVALID_PLACE_INFO_URL_TOO_LONG => PlacesError::UrlTooLong(e),
+            error_codes::URL_PARSE_ERROR => PlacesError::UrlParseFailed(e),
+            _ => PlacesError::UnexpectedError(e),
+        }
     }
 }
 

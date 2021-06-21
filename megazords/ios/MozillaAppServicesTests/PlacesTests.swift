@@ -360,4 +360,33 @@ class PlacesTests: XCTestCase {
         try! db.deleteHistoryMetadaOlderThan(olderThan: afterLastMeta2Update)
         XCTAssertEqual(0, try! db.getHistoryMetadataSince(since: beginning).count)
     }
+    
+    // Due to the current hybrid approach of Uniffi for places, we're adding error test cases
+    // To properly test uniffi & non-uniffi properly error propagate
+    func testPlacesErrors() {
+        let db = api.getWriter()
+        
+        // Testing a non-uniffi error
+        do {
+            let _ = try db.updateBookmarkNode(guid: "123", parentGUID: "456")
+        } catch let caughtError as PlacesError {
+            // SAM_TODO: Invalid Place Info is not part of enum so this fails
+            XCTAssertEqual(caughtError.errorDescription, "PlacesError")
+            XCTFail("Call did not throw")
+        } catch {
+            XCTFail("Not a PlacesError")
+        }
+        
+        
+        // Testing a Uniffi-ed error
+        do {
+            let _ = try db.getLatestHistoryMetadataForUrl(url: "somerandomurl")
+        } catch let caughtError as PlacesError {
+            XCTAssertEqual(caughtError.errorDescription, "PlacesError.UrlParseFailed: URL parse failed")
+            XCTFail("Call did not throw")
+        } catch {
+            XCTFail("Not a PlacesError")
+        }
+        
+    }
 }

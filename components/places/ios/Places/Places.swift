@@ -257,7 +257,7 @@ public class PlacesReadConnection {
     fileprivate func checkApi() throws {
         if api == nil {
             // SAM: Will need to fix this after errors get the "real" messages in
-            throw PlacesError.Oops(message: "oops!")
+            throw PlacesError.UnexpectedError(message: "API Closed")
         }
     }
 
