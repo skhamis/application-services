@@ -22,6 +22,8 @@ import mozilla.appservices.places.uniffi.DocumentType
 import mozilla.appservices.places.uniffi.HistoryMetadata
 import mozilla.appservices.places.uniffi.HistoryMetadataObservation
 import mozilla.appservices.places.uniffi.liftSequenceRecordHistoryMetadata
+import mozilla.appservices.places.uniffi.ErrorWrapperException
+
 
 /**
  * Import some private Glean types, so that we can use them in type declarations.
@@ -179,6 +181,26 @@ internal inline fun <U> rustCall(syncOn: Any, callback: (RustError.ByReference) 
             throw e.intoException()
         } else {
             return ret
+        }
+    }
+}
+
+// Call an ffi-generated function.
+internal inline fun <U> rustCallUniffi(syncOn: Any, callback: () -> U): U {
+    synchronized(syncOn) {
+        try {
+            return callback()
+        } catch (e: ErrorWrapperException.Wrapped) {
+            if (e.message != null) {
+                try {
+                    val (code, message) = e.message.split('|', limit=2)
+                    throw RustError.makeException(code.toInt(), message)
+                } catch (_: NumberFormatException) {
+                    // how to log? Not clear it matters TBH - all the details
+                    // should be visible in the generic exception we throw below.
+                }
+            }
+            throw RuntimeException("Unexpected error: $e")
         }
     }
 }
@@ -395,41 +417,24 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
     }
 
     override suspend fun getLatestHistoryMetadataForUrl(url: String): HistoryMetadata? {
-        val rustBuffer = rustCall { error ->
-            LibPlacesFFI.INSTANCE.places_get_latest_history_metadata_for_url(
-                this.handle.get(), url, error
-            )
-        }
-        return HistoryMetadata.lift(rustBuffer)
+        return mozilla.appservices.places.uniffi.placesGetLatestHistoryMetadataForUrl(this.handle.get(), url)
     }
 
     override suspend fun getHistoryMetadataSince(since: Long): List<HistoryMetadata> {
         readQueryCounters.measure {
-            val rustBuffer = rustCall { error ->
-                LibPlacesFFI.INSTANCE.places_get_history_metadata_since(
-                        this.handle.get(), since, error)
-            }
-            return liftSequenceRecordHistoryMetadata(rustBuffer)
+            return mozilla.appservices.places.uniffi.placesGetHistoryMetadataSince(this.handle.get(), since)
         }
     }
 
     override suspend fun getHistoryMetadataBetween(start: Long, end: Long): List<HistoryMetadata> {
         readQueryCounters.measure {
-            val rustBuffer = rustCall { error ->
-                LibPlacesFFI.INSTANCE.places_get_history_metadata_between(
-                        this.handle.get(), start, end, error)
-            }
-            return liftSequenceRecordHistoryMetadata(rustBuffer)
+            return mozilla.appservices.places.uniffi.placesGetHistoryMetadataBetween(this.handle.get(), start, end)
         }
     }
 
-    override suspend fun queryHistoryMetadata(query: String, limit: Int): List<HistoryMetadata> {
+    override suspend fun queryHistoryMetadata(query: String, limit: Long): List<HistoryMetadata> {
         readQueryCounters.measure {
-            val rustBuffer = rustCall { error ->
-                LibPlacesFFI.INSTANCE.places_query_history_metadata(
-                        this.handle.get(), query, limit, error)
-            }
-            return liftSequenceRecordHistoryMetadata(rustBuffer)
+            return mozilla.appservices.places.uniffi.placesQueryHistoryMetadata(this.handle.get(), query, limit)
         }
     }
 
@@ -635,8 +640,8 @@ class PlacesWriterConnection internal constructor(connHandle: Long, api: PlacesA
         // NB: Even though `MsgTypes.HistoryMetadataObservation` has an optional title field, we ignore it here.
         // That's used by consumers which aren't already using the history observation APIs.
         return writeQueryCounters.measure {
-            rustCall { error ->
-                LibPlacesFFI.INSTANCE.places_note_history_metadata_observation(this.handle.get(), observation.lower(), error)
+            rustCallUniffi(this) {
+                mozilla.appservices.places.uniffi.placesNoteHistoryMetadataObservation(this.handle.get(), observation)
             }
         }
     }
@@ -904,7 +909,7 @@ interface ReadableHistoryMetadataConnection : InterruptibleConnection {
      * @param limit A maximum number of records to return.
      * @return A `List` of matching [HistoryMetadata], empty if nothing is found.
      */
-    suspend fun queryHistoryMetadata(query: String, limit: Int): List<HistoryMetadata>
+    suspend fun queryHistoryMetadata(query: String, limit: Long): List<HistoryMetadata>
 }
 
 /**

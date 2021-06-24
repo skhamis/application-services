@@ -3,20 +3,20 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 namespace places {
-    [Throws=PlacesError]
-    HistoryMetadata? places_get_latest_history_metadata_for_url(u64 handle, string url);
+    [Throws=ErrorWrapper]
+    HistoryMetadata? places_get_latest_history_metadata_for_url(i64 handle, string url);
 
-    [Throws=PlacesError]
-    sequence<HistoryMetadata> places_get_history_metadata_between(u64 handle, i64 start, i64 end);
+    [Throws=ErrorWrapper]
+    sequence<HistoryMetadata> places_get_history_metadata_between(i64 handle, i64 start, i64 end);
 
-    [Throws=PlacesError]
-    sequence<HistoryMetadata> places_get_history_metadata_since(u64 handle, i64 start);
+    [Throws=ErrorWrapper]
+    sequence<HistoryMetadata> places_get_history_metadata_since(i64 handle, i64 start);
 
-    [Throws=PlacesError]
-    sequence<HistoryMetadata> places_query_history_metadata(u64 handle, string query, i64 limit);
+    [Throws=ErrorWrapper]
+    sequence<HistoryMetadata> places_query_history_metadata(i64 handle, string query, i64 limit);
 
-    [Throws=PlacesError]
-    void places_note_history_metadata_observation(u64 handle, HistoryMetadataObservation data);
+    [Throws=ErrorWrapper]
+    void places_note_history_metadata_observation(i64 handle, HistoryMetadataObservation data);
 };
 
 // Some kind of namespacing for uniffi would be ideal. Multiple udl/macro defns?
@@ -56,17 +56,7 @@ dictionary Dummy {
     sequence<HistoryMetadata>? md;
 };
 
-
 [Error]
-enum PlacesError {
-    "UrlParseFailed",
-    "PlacesConnectionBusy",
-    "OperationInterrupted",
-    "BookmarksCorruption",
-    "InvalidParent",
-    "UnknownBookmarkItem",
-    "UrlTooLong",
-    "InvalidBookmarkUpdate",
-    "CannotUpdateRoot",
-    "UnexpectedError",
+enum ErrorWrapper {
+    "Wrapped",
 };

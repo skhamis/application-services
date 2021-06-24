@@ -528,5 +528,17 @@ class PlacesConnectionTest {
         db.deleteHistoryMetadataOlderThan(currentTime + 10000)
 
         assertEquals(0, db.getHistoryMetadataSince(0L).size)
+
+        val metaKeyBad = HistoryMetadataKey(
+            url = "invalid-url",
+            searchTerm = null,
+            referrerUrl = null
+        )
+        try {
+            db.noteHistoryMetadataObservationViewTime(metaKeyBad, 200)
+            assert(false) // should fail
+        } catch (e: PlacesException) {
+            assert(e is UrlParseFailed)
+        }
     }
 }
