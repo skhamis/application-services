@@ -6,8 +6,8 @@ import Foundation
 import os.log
 
 /// Indicates an error occurred while calling into the places storage layer
- enum PlacesError: LocalizedError {
-     /// This indicates an attempt to use a connection after the PlacesAPI
+public enum PlacesError: LocalizedError {
+    /// This indicates an attempt to use a connection after the PlacesAPI
     /// it came from is destroyed. This indicates a usage error of this library.
     case connUseAfterAPIClosed
 
@@ -88,81 +88,81 @@ import os.log
         }
     }
 
-     // The name is attempting to indicate that we free rustError.message if it
-     // existed, and that it's a very bad idea to touch it after you call this
-     // function
-     static func fromConsuming(_ rustError: PlacesRustError) -> PlacesError? {
+    // The name is attempting to indicate that we free rustError.message if it
+    // existed, and that it's a very bad idea to touch it after you call this
+    // function
+    static func fromConsuming(_ rustError: PlacesRustError) -> PlacesError? {
         let message = rustError.message == nil ? "" : String(freeingPlacesString: rustError.message!)
         return makeException(code: rustError.code, message: message)
-     }
+    }
 
-     static func makeException(code: PlacesErrorCode, message: String) -> PlacesError? {
-            switch code {
-                case Places_NoError:
-                    return nil
-                case Places_UrlParseError:
-                    return .urlParseError(message: message)
-                case Places_DatabaseBusy:
-                    return .databaseBusy(message: message)
-                case Places_DatabaseInterrupted:
-                    return .databaseInterrupted(message: message)
-                case Places_Corrupt:
-                    return .databaseCorrupt(message: message)
+    static func makeException(code: PlacesErrorCode, message: String) -> PlacesError? {
+        switch code {
+        case Places_NoError:
+            return nil
+        case Places_UrlParseError:
+            return .urlParseError(message: message)
+        case Places_DatabaseBusy:
+            return .databaseBusy(message: message)
+        case Places_DatabaseInterrupted:
+            return .databaseInterrupted(message: message)
+        case Places_Corrupt:
+            return .databaseCorrupt(message: message)
 
-                case Places_InvalidPlace_InvalidParent:
-                    return .invalidParent(message: message)
-                case Places_InvalidPlace_NoSuchItem:
-                    return .noSuchItem(message: message)
-                case Places_InvalidPlace_UrlTooLong:
-                    return .urlTooLong(message: message)
-                case Places_InvalidPlace_IllegalChange:
-                    return .illegalChange(message: message)
-                case Places_InvalidPlace_CannotUpdateRoot:
-                    return .cannotUpdateRoot(message: message)
+        case Places_InvalidPlace_InvalidParent:
+            return .invalidParent(message: message)
+        case Places_InvalidPlace_NoSuchItem:
+            return .noSuchItem(message: message)
+        case Places_InvalidPlace_UrlTooLong:
+            return .urlTooLong(message: message)
+        case Places_InvalidPlace_IllegalChange:
+            return .illegalChange(message: message)
+        case Places_InvalidPlace_CannotUpdateRoot:
+            return .cannotUpdateRoot(message: message)
 
-                case Places_Panic:
-                    return .panic(message: message)
-                // Note: `1` is used as a generic catch all, but we
-                // might as well handle the others the same way.
-                default:
-                    return .unexpected(message: message)
-            }
+        case Places_Panic:
+            return .panic(message: message)
+        // Note: `1` is used as a generic catch all, but we
+        // might as well handle the others the same way.
+        default:
+            return .unexpected(message: message)
         }
+    }
 
-     @discardableResult
-     static func tryUnwrap<T>(_ callback: (UnsafeMutablePointer<PlacesRustError>) throws -> T?) throws -> T? {
-         var err = PlacesRustError(code: Places_NoError, message: nil)
-         let returnedVal = try callback(&err)
-         if let placesErr = PlacesError.fromConsuming(err) {
-             throw placesErr
-         }
-         guard let result = returnedVal else {
-             return nil
-         }
-         return result
-     }
+    @discardableResult
+    static func tryUnwrap<T>(_ callback: (UnsafeMutablePointer<PlacesRustError>) throws -> T?) throws -> T? {
+        var err = PlacesRustError(code: Places_NoError, message: nil)
+        let returnedVal = try callback(&err)
+        if let placesErr = PlacesError.fromConsuming(err) {
+            throw placesErr
+        }
+        guard let result = returnedVal else {
+            return nil
+        }
+        return result
+    }
 
-     @discardableResult
-     static func unwrap<T>(_ callback: (UnsafeMutablePointer<PlacesRustError>) throws -> T?) throws -> T {
-         guard let result = try PlacesError.tryUnwrap(callback) else {
-             throw ResultError.empty
-         }
-         return result
-     }
+    @discardableResult
+    static func unwrap<T>(_ callback: (UnsafeMutablePointer<PlacesRustError>) throws -> T?) throws -> T {
+        guard let result = try PlacesError.tryUnwrap(callback) else {
+            throw ResultError.empty
+        }
+        return result
+    }
 
-     // Same as `tryUnwrap`, but instead of erroring, just logs. Useful for cases like destructors where we
-     // cannot throw.
-     @discardableResult
-     static func unwrapOrLog<T>(_ callback: (UnsafeMutablePointer<PlacesRustError>) throws -> T?) -> T? {
-         do {
-             let result = try PlacesError.tryUnwrap(callback)
-             return result
-         } catch let e {
-             // Can't log what the error is without jumping through hoops apparently, oh well...
-             os_log("Hit places error when throwing is impossible %{public}@", type: .error, "\(e)")
-             return nil
-         }
-     }
+    // Same as `tryUnwrap`, but instead of erroring, just logs. Useful for cases like destructors where we
+    // cannot throw.
+    @discardableResult
+    static func unwrapOrLog<T>(_ callback: (UnsafeMutablePointer<PlacesRustError>) throws -> T?) -> T? {
+        do {
+            let result = try PlacesError.tryUnwrap(callback)
+            return result
+        } catch let e {
+            // Can't log what the error is without jumping through hoops apparently, oh well...
+            os_log("Hit places error when throwing is impossible %{public}@", type: .error, "\(e)")
+            return nil
+        }
+    }
 
     @discardableResult
     static func unwrapWithUniffi<T>(_ callback: (UnsafeMutablePointer<PlacesRustError>) throws -> T?) throws -> T? {
@@ -170,18 +170,17 @@ import os.log
             var err = PlacesRustError(code: Places_NoError, message: nil)
             return try callback(&err)
         } catch let errorWrapper as ErrorWrapper {
-
             switch errorWrapper {
-                case let .Wrapped(message):
-                    let splitError = message.components(separatedBy: "|")
+            case let .Wrapped(message):
+                let splitError = message.components(separatedBy: "|")
 
-                    // If we couldn't get the right code, default to unexpected error
-                    let code = Int32(splitError[0]) ?? 1
-                    let message = splitError[1]
-                    throw makeException(code: PlacesErrorCode(rawValue: code), message: message)!
+                // If we couldn't get the right code, default to unexpected error
+                let code = Int32(splitError[0]) ?? 1
+                let message = splitError[1]
+                throw makeException(code: PlacesErrorCode(rawValue: code), message: message)!
             default:
                 throw PlacesError.unexpected(message: "Unexpected Error")
             }
         }
     }
- }
+}

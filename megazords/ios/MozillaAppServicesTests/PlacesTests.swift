@@ -360,15 +360,15 @@ class PlacesTests: XCTestCase {
         try! db.deleteHistoryMetadataOlderThan(olderThan: afterLastMeta2Update)
         XCTAssertEqual(0, try! db.getHistoryMetadataSince(since: beginning).count)
     }
-    
+
     // Due to the current hybrid approach of Uniffi for places, we're adding error test cases
     // To properly test uniffi & non-uniffi properly error propagate
     func testPlacesErrors() {
         let db = api.getWriter()
-        
+
         // Testing a non-uniffi error
         do {
-            let _ = try db.updateBookmarkNode(guid: "123", parentGUID: "456")
+            _ = try db.updateBookmarkNode(guid: "123", parentGUID: "456")
             XCTFail("Call did not throw")
         } catch let caughtError as PlacesError {
             if case PlacesError.noSuchItem = caughtError {
@@ -378,11 +378,10 @@ class PlacesTests: XCTestCase {
         } catch {
             XCTFail("Not a PlacesError")
         }
-        
-        
+
         // Testing a Uniffi-ed error
         do {
-            let _ = try db.getLatestHistoryMetadataForUrl(url: "somerandomurl")
+            _ = try db.getLatestHistoryMetadataForUrl(url: "somerandomurl")
             XCTFail("Call did not throw")
         } catch let caughtError as PlacesError {
             if case PlacesError.urlParseError = caughtError {
@@ -395,6 +394,5 @@ class PlacesTests: XCTestCase {
             XCTAssertEqual(desc, "Error")
             XCTFail("Not a PlacesError")
         }
-        
     }
 }

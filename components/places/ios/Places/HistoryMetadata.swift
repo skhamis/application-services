@@ -4,7 +4,6 @@
 
 import Foundation
 
-
 /**
  Represents a set of properties which uniquely identify a history metadata. In database terms this is a compound key.
  */
@@ -13,4 +12,3 @@ public struct HistoryMetadataKey {
     public let searchTerm: String?
     public let referrerUrl: String?
 }
-
