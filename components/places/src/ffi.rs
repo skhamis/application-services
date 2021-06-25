@@ -159,7 +159,7 @@ fn get_error_number(err: &Error) -> i32 {
     match err.kind() {
         ErrorKind::InvalidPlaceInfo(info) => {
             log::error!("Invalid place info: {}", info);
-            let code = match &info {
+            match &info {
                 InvalidPlaceInfo::InvalidParent(..) => {
                     error_codes::INVALID_PLACE_INFO_INVALID_PARENT
                 }
@@ -172,8 +172,7 @@ fn get_error_number(err: &Error) -> i32 {
                     error_codes::INVALID_PLACE_INFO_CANNOT_UPDATE_ROOT
                 }
                 _ => error_codes::UNEXPECTED,
-            };
-            code
+            }
         }
         ErrorKind::UrlParseError(e) => {
             log::error!("URL parse error: {}", e);

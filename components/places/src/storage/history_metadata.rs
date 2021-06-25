@@ -292,35 +292,35 @@ pub fn get_latest_for_url(db: &PlacesDb, url: &Url) -> Result<Option<HistoryMeta
 }
 
 pub fn get_between(db: &PlacesDb, start: i64, end: i64) -> Result<Vec<HistoryMetadata>> {
-    Ok(db.query_rows_and_then_named_cached(
+    db.query_rows_and_then_named_cached(
         GET_BETWEEN_SQL.as_str(),
         rusqlite::named_params! {
             ":start": start,
             ":end": end,
         },
         HistoryMetadata::from_row,
-    )?)
+    )
 }
 
 pub fn get_since(db: &PlacesDb, start: i64) -> Result<Vec<HistoryMetadata>> {
-    Ok(db.query_rows_and_then_named_cached(
+    db.query_rows_and_then_named_cached(
         GET_SINCE_SQL.as_str(),
         rusqlite::named_params! {
             ":start": start
         },
         HistoryMetadata::from_row,
-    )?)
+    )
 }
 
 pub fn query(db: &PlacesDb, query: &str, limit: i64) -> Result<Vec<HistoryMetadata>> {
-    Ok(db.query_rows_and_then_named_cached(
+    db.query_rows_and_then_named_cached(
         QUERY_SQL.as_str(),
         rusqlite::named_params! {
             ":query": format!("%{}%", query),
             ":limit": limit
         },
         HistoryMetadata::from_row,
-    )?)
+    )
 }
 
 pub fn delete_older_than(db: &PlacesDb, older_than: i64) -> Result<()> {
