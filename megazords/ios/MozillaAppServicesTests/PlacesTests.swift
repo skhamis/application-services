@@ -369,10 +369,12 @@ class PlacesTests: XCTestCase {
         // Testing a non-uniffi error
         do {
             let _ = try db.updateBookmarkNode(guid: "123", parentGUID: "456")
-        } catch let caughtError as PlacesError {
-            // SAM_TODO: Invalid Place Info is not part of enum so this fails
-            XCTAssertEqual(caughtError.errorDescription, "PlacesError")
             XCTFail("Call did not throw")
+        } catch let caughtError as PlacesError {
+            if case PlacesError.noSuchItem = caughtError {
+            } else {
+                XCTFail("Not the correct error ")
+            }
         } catch {
             XCTFail("Not a PlacesError")
         }
@@ -381,10 +383,16 @@ class PlacesTests: XCTestCase {
         // Testing a Uniffi-ed error
         do {
             let _ = try db.getLatestHistoryMetadataForUrl(url: "somerandomurl")
-        } catch let caughtError as PlacesError {
-            XCTAssertEqual(caughtError.errorDescription, "PlacesError.UrlParseFailed: URL parse failed")
             XCTFail("Call did not throw")
+        } catch let caughtError as PlacesError {
+            if case PlacesError.urlParseError = caughtError {
+            } else {
+                XCTAssertEqual(caughtError.localizedDescription, "Error")
+                XCTFail("Not the correct PlacesError")
+            }
         } catch {
+            let desc = error.localizedDescription
+            XCTAssertEqual(desc, "Error")
             XCTFail("Not a PlacesError")
         }
         

@@ -256,8 +256,7 @@ public class PlacesReadConnection {
     // Note: caller synchronizes!
     fileprivate func checkApi() throws {
         if api == nil {
-            // SAM: Will need to fix this after errors get the "real" messages in
-            throw PlacesError.UnexpectedError(message: "API Closed")
+            throw PlacesError.connUseAfterAPIClosed
         }
     }
 
@@ -521,28 +520,39 @@ public class PlacesReadConnection {
     open func getLatestHistoryMetadataForUrl(url: String) throws -> HistoryMetadata? {
         return try queue.sync {
             try self.checkApi()
-            return try placesGetLatestHistoryMetadataForUrl(handle: self.handle, url: url)
+            return try PlacesError.unwrapWithUniffi { error in
+                try placesGetLatestHistoryMetadataForUrl(handle: Int64(self.handle), url: url)
+            }
         }
     }
 
     open func getHistoryMetadataSince(since: Int64) throws -> [HistoryMetadata] {
         return try queue.sync {
             try self.checkApi()
-            return try placesGetHistoryMetadataSince(handle: self.handle, start: since)
+            let result = try PlacesError.unwrapWithUniffi { error in
+                try placesGetHistoryMetadataSince(handle: Int64(self.handle), start: since)
+            }
+            return result ?? []
         }
     }
 
     open func getHistoryMetadataBetween(start: Int64, end: Int64) throws -> [HistoryMetadata] {
         return try queue.sync {
             try self.checkApi()
-            return try placesGetHistoryMetadataBetween(handle: self.handle, start: start, end: end)
+            let result = try PlacesError.unwrapWithUniffi { error in
+                try placesGetHistoryMetadataBetween(handle: Int64(self.handle), start: start, end: end)
+            }
+            return result ?? []
         }
     }
 
     open func queryHistoryMetadata(query: String, limit: Int32) throws -> [HistoryMetadata] {
         return try queue.sync {
             try self.checkApi()
-            return try placesQueryHistoryMetadata(handle: self.handle, query: query, limit: Int64(limit))
+            let result = try PlacesError.unwrapWithUniffi { error in
+                try placesQueryHistoryMetadata(handle: Int64(self.handle), query: query, limit: Int64(limit))
+            }
+            return result ?? []
         }
     }
 
@@ -867,7 +877,7 @@ public class PlacesWriteConnection: PlacesReadConnection {
     ) throws {
         try queue.sync {
             try self.checkApi()
-            try placesNoteHistoryMetadataObservation(handle: self.handle, data: observation)
+            try placesNoteHistoryMetadataObservation(handle: Int64(self.handle), data: observation)
         }
     }
     
