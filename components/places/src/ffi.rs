@@ -134,6 +134,17 @@ fn places_note_history_metadata_observation(
     )
 }
 
+fn places_metadata_delete_older_than(handle: i64, older_than: i64) -> Result<(), ErrorWrapper> {
+    log::debug!("places_note_history_metadata_observation");
+    CONNECTIONS.get(
+        Handle::from_u64(handle as u64)?,
+        |conn| -> Result<_, ErrorWrapper> {
+            crate::storage::history_metadata::delete_older_than(conn, older_than)?;
+            Ok(())
+        },
+    )
+}
+
 pub mod error_codes {
     // Note: 0 (success) and -1 (panic) are reserved by ffi_support
 

@@ -880,42 +880,43 @@ public class PlacesWriteConnection: PlacesReadConnection {
             try placesNoteHistoryMetadataObservation(handle: Int64(self.handle), data: observation)
         }
     }
-    
+
     // Keeping these three functions inline with what Kotlin (PlacesConnection.kt)
     // to make future work more symmetrical
     open func noteHistoryMetadataObservationViewTime(key: HistoryMetadataKey, viewTime: Int32?) throws {
-            let obs = HistoryMetadataObservation(
-                url: key.url,
-                referrerUrl: key.referrerUrl,
-                searchTerm: key.searchTerm,
-                viewTime: viewTime
-            )
+        let obs = HistoryMetadataObservation(
+            url: key.url,
+            referrerUrl: key.referrerUrl,
+            searchTerm: key.searchTerm,
+            viewTime: viewTime
+        )
         try noteHistoryMetadataObservation(observation: obs)
     }
 
     open func noteHistoryMetadataObservationDocumentType(key: HistoryMetadataKey, documentType: DocumentType) throws {
-            let obs = HistoryMetadataObservation(
-                url: key.url,
-                referrerUrl: key.referrerUrl,
-                searchTerm: key.searchTerm,
-                documentType: documentType
-            )
-        try noteHistoryMetadataObservation(observation: obs)
-    }
-    
-    open func noteHistoryMetadataObservationTitle(key: HistoryMetadataKey, title: String) throws {
-            let obs = HistoryMetadataObservation(
-                url: key.url,
-                referrerUrl: key.referrerUrl,
-                searchTerm: key.searchTerm,
-                title: title
-            )
+        let obs = HistoryMetadataObservation(
+            url: key.url,
+            referrerUrl: key.referrerUrl,
+            searchTerm: key.searchTerm,
+            documentType: documentType
+        )
         try noteHistoryMetadataObservation(observation: obs)
     }
 
-    open func deleteHistoryMetadaOlderThan(olderThan: Int64) throws {
-        try PlacesError.unwrap { error in
-            places_metadata_delete_older_than(self.handle, olderThan, error)
+    open func noteHistoryMetadataObservationTitle(key: HistoryMetadataKey, title: String) throws {
+        let obs = HistoryMetadataObservation(
+            url: key.url,
+            referrerUrl: key.referrerUrl,
+            searchTerm: key.searchTerm,
+            title: title
+        )
+        try noteHistoryMetadataObservation(observation: obs)
+    }
+
+    open func deleteHistoryMetadataOlderThan(olderThan: Int64) throws {
+        try queue.sync {
+            try self.checkApi()
+            try placesMetadataDeleteOlderThan(handle: Int64(self.handle), olderThan: olderThan)
         }
     }
 }

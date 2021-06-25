@@ -163,18 +163,18 @@ import os.log
              return nil
          }
      }
-    
+
     @discardableResult
     static func unwrapWithUniffi<T>(_ callback: (UnsafeMutablePointer<PlacesRustError>) throws -> T?) throws -> T? {
         do {
             var err = PlacesRustError(code: Places_NoError, message: nil)
             return try callback(&err)
         } catch let errorWrapper as ErrorWrapper {
-            
+
             switch errorWrapper {
                 case let .Wrapped(message):
                     let splitError = message.components(separatedBy: "|")
-                    
+
                     // If we couldn't get the right code, default to unexpected error
                     let code = Int32(splitError[0]) ?? 1
                     let message = splitError[1]

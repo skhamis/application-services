@@ -17,6 +17,9 @@ namespace places {
 
     [Throws=ErrorWrapper]
     void places_note_history_metadata_observation(i64 handle, HistoryMetadataObservation data);
+
+    [Throws=ErrorWrapper]
+    void places_metadata_delete_older_than(i64 handle, i64 older_than);
 };
 
 // Some kind of namespacing for uniffi would be ideal. Multiple udl/macro defns?

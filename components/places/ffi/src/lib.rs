@@ -465,18 +465,6 @@ pub extern "C" fn places_get_visit_page_with_bound(
 }
 
 #[no_mangle]
-pub extern "C" fn places_metadata_delete_older_than(
-    handle: u64,
-    older_than: i64,
-    error: &mut ExternError,
-) {
-    log::debug!("places_metadata_delete_older_than");
-    CONNECTIONS.call_with_result_mut(error, handle, |conn| {
-        storage::history_metadata::delete_older_than(conn, older_than)
-    })
-}
-
-#[no_mangle]
 pub extern "C" fn places_accept_result(
     handle: u64,
     search_string: FfiStr<'_>,

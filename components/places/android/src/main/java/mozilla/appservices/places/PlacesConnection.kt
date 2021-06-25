@@ -668,8 +668,8 @@ class PlacesWriterConnection internal constructor(connHandle: Long, api: PlacesA
 
     override suspend fun deleteHistoryMetadataOlderThan(olderThan: Long) {
         return writeQueryCounters.measure {
-            rustCall { err ->
-                LibPlacesFFI.INSTANCE.places_metadata_delete_older_than(this.handle.get(), olderThan, err)
+            rustCallUniffi(this) {
+                mozilla.appservices.places.uniffi.placesMetadataDeleteOlderThan(this.handle.get(), olderThan)
             }
         }
     }
