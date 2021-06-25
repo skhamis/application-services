@@ -351,13 +351,13 @@ class PlacesTests: XCTestCase {
         list = try! db.queryHistoryMetadata(query: "Title", limit: 100)
         XCTAssertEqual(1, list.count)
 
-        try! db.deleteHistoryMetadaOlderThan(olderThan: beginning)
+        try! db.deleteHistoryMetadataOlderThan(olderThan: beginning)
         XCTAssertEqual(2, try! db.getHistoryMetadataSince(since: beginning).count)
-        try! db.deleteHistoryMetadaOlderThan(olderThan: afterLastMeta1Update)
+        try! db.deleteHistoryMetadataOlderThan(olderThan: afterLastMeta1Update)
         list = try! db.getHistoryMetadataSince(since: beginning)
         XCTAssertEqual(1, list.count)
         XCTAssertEqual("http://www.mozilla.org/another/", list[0].url)
-        try! db.deleteHistoryMetadaOlderThan(olderThan: afterLastMeta2Update)
+        try! db.deleteHistoryMetadataOlderThan(olderThan: afterLastMeta2Update)
         XCTAssertEqual(0, try! db.getHistoryMetadataSince(since: beginning).count)
     }
     
