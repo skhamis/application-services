@@ -7,33 +7,23 @@ package mozilla.appservices.places
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.StringArray
+import mozilla.appservices.places.uniffi.DocumentType
+import mozilla.appservices.places.uniffi.ErrorWrapperException
+import mozilla.appservices.places.uniffi.HistoryMetadata
+import mozilla.appservices.places.uniffi.HistoryMetadataObservation
 import mozilla.appservices.support.native.toNioDirectBuffer
 import mozilla.appservices.sync15.SyncTelemetryPing
+import mozilla.components.service.glean.private.CounterMetricType
+import mozilla.components.service.glean.private.LabeledMetricType
 import org.json.JSONArray
-import org.json.JSONObject
 import org.json.JSONException
+import org.json.JSONObject
+import java.lang.ref.WeakReference
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
-import java.lang.ref.WeakReference
 import org.mozilla.appservices.places.GleanMetrics.PlacesManager as PlacesManagerMetrics
-import mozilla.appservices.places.uniffi.DocumentType
-import mozilla.appservices.places.uniffi.HistoryMetadata
-import mozilla.appservices.places.uniffi.HistoryMetadataObservation
-import mozilla.appservices.places.uniffi.liftSequenceRecordHistoryMetadata
-import mozilla.appservices.places.uniffi.ErrorWrapperException
-
-
-/**
- * Import some private Glean types, so that we can use them in type declarations.
- *
- * By agreement with the Glean team, we must not
- * instantiate anything from these classes, and it's on us to fix any bustage
- * on version updates.
- */
-import mozilla.components.service.glean.private.CounterMetricType
-import mozilla.components.service.glean.private.LabeledMetricType
 
 /**
  * An implementation of a [PlacesManager] backed by a Rust Places library.
@@ -48,12 +38,17 @@ class PlacesApi(path: String) : PlacesManager, AutoCloseable {
     private var writeConn: PlacesWriterConnection
 
     init {
-        handle.set(rustCall(this) { error ->
-            LibPlacesFFI.INSTANCE.places_api_new(path, error)
-        })
-        writeConn = PlacesWriterConnection(rustCall(this) { error ->
-            LibPlacesFFI.INSTANCE.places_connection_new(handle.get(), READ_WRITE, error)
-        }, this)
+        handle.set(
+            rustCall(this) { error ->
+                LibPlacesFFI.INSTANCE.places_api_new(path, error)
+            }
+        )
+        writeConn = PlacesWriterConnection(
+            rustCall(this) { error ->
+                LibPlacesFFI.INSTANCE.places_connection_new(handle.get(), READ_WRITE, error)
+            },
+            this
+        )
     }
 
     companion object {
@@ -107,12 +102,12 @@ class PlacesApi(path: String) : PlacesManager, AutoCloseable {
     override fun syncHistory(syncInfo: SyncAuthInfo): SyncTelemetryPing {
         val pingJSONString = rustCallForString(this) { error ->
             LibPlacesFFI.INSTANCE.sync15_history_sync(
-                    this.handle.get(),
-                    syncInfo.kid,
-                    syncInfo.fxaAccessToken,
-                    syncInfo.syncKey,
-                    syncInfo.tokenserverURL,
-                    error
+                this.handle.get(),
+                syncInfo.kid,
+                syncInfo.fxaAccessToken,
+                syncInfo.syncKey,
+                syncInfo.tokenserverURL,
+                error
             )
         }
         return SyncTelemetryPing.fromJSONString(pingJSONString)
@@ -121,12 +116,12 @@ class PlacesApi(path: String) : PlacesManager, AutoCloseable {
     override fun syncBookmarks(syncInfo: SyncAuthInfo): SyncTelemetryPing {
         val pingJSONString = rustCallForString(this) { error ->
             LibPlacesFFI.INSTANCE.sync15_bookmarks_sync(
-                    this.handle.get(),
-                    syncInfo.kid,
-                    syncInfo.fxaAccessToken,
-                    syncInfo.syncKey,
-                    syncInfo.tokenserverURL,
-                    error
+                this.handle.get(),
+                syncInfo.kid,
+                syncInfo.fxaAccessToken,
+                syncInfo.syncKey,
+                syncInfo.tokenserverURL,
+                error
             )
         }
         return SyncTelemetryPing.fromJSONString(pingJSONString)
@@ -142,7 +137,8 @@ class PlacesApi(path: String) : PlacesManager, AutoCloseable {
     override fun importPinnedSitesFromFennec(path: String): List<BookmarkItem> {
         val rustBuf = rustCall(this) { error ->
             LibPlacesFFI.INSTANCE.places_pinned_sites_import_from_fennec(
-                this.handle.get(), path, error)
+                this.handle.get(), path, error
+            )
         }
 
         try {
@@ -186,6 +182,7 @@ internal inline fun <U> rustCall(syncOn: Any, callback: (RustError.ByReference) 
 }
 
 // Call an ffi-generated function.
+@Suppress("TooGenericExceptionThrown")
 internal inline fun <U> rustCallUniffi(syncOn: Any, callback: () -> U): U {
     synchronized(syncOn) {
         try {
@@ -193,7 +190,7 @@ internal inline fun <U> rustCallUniffi(syncOn: Any, callback: () -> U): U {
         } catch (e: ErrorWrapperException.Wrapped) {
             if (e.message != null) {
                 try {
-                    val (code, message) = e.message.split('|', limit=2)
+                    val (code, message) = e.message.split('|', limit = 2)
                     throw RustError.makeException(code.toInt(), message)
                 } catch (_: NumberFormatException) {
                     // how to log? Not clear it matters TBH - all the details
@@ -208,8 +205,10 @@ internal inline fun <U> rustCallUniffi(syncOn: Any, callback: () -> U): U {
 @Suppress("TooGenericExceptionThrown")
 internal inline fun rustCallForString(syncOn: Any, callback: (RustError.ByReference) -> Pointer?): String {
     val cstring = rustCall(syncOn, callback)
-            ?: throw RuntimeException("Bug: Don't use this function when you can return" +
-                    " null on success.")
+        ?: throw RuntimeException(
+            "Bug: Don't use this function when you can return" +
+                " null on success."
+        )
     try {
         return cstring.getString(0, "utf8")
     } finally {
@@ -234,9 +233,11 @@ open class PlacesConnection internal constructor(connHandle: Long) : Interruptib
     init {
         handle.set(connHandle)
         try {
-            interruptHandle = InterruptHandle(rustCall { err ->
-                LibPlacesFFI.INSTANCE.places_new_interrupt_handle(connHandle, err)
-            }!!)
+            interruptHandle = InterruptHandle(
+                rustCall { err ->
+                    LibPlacesFFI.INSTANCE.places_new_interrupt_handle(connHandle, err)
+                }!!
+            )
         } catch (e: Throwable) {
             rustCall { error ->
                 LibPlacesFFI.INSTANCE.places_connection_destroy(this.handle.getAndSet(0), error)
@@ -285,10 +286,10 @@ open class PlacesConnection internal constructor(connHandle: Long) : Interruptib
  * This class is thread safe.
  */
 open class PlacesReaderConnection internal constructor(connHandle: Long) :
-        PlacesConnection(connHandle),
-        ReadableHistoryConnection,
-        ReadableHistoryMetadataConnection,
-        ReadableBookmarksConnection {
+    PlacesConnection(connHandle),
+    ReadableHistoryConnection,
+    ReadableHistoryMetadataConnection,
+    ReadableBookmarksConnection {
     override fun queryAutocomplete(query: String, limit: Int): List<SearchResult> {
         val resultBuffer = rustCall { error ->
             LibPlacesFFI.INSTANCE.places_query_autocomplete(this.handle.get(), query, limit, error)
@@ -330,10 +331,10 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
             rustCall { error ->
                 val bufferPtr = Native.getDirectBufferPointer(byteBuffer)
                 LibPlacesFFI.INSTANCE.places_get_visited(
-                        this.handle.get(),
-                        urlStrings, urls.size,
-                        bufferPtr, urls.size,
-                        error
+                    this.handle.get(),
+                    urlStrings, urls.size,
+                    bufferPtr, urls.size,
+                    error
                 )
             }
         }
@@ -342,7 +343,8 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
             val wasVisited = byteBuffer.get(index)
             if (wasVisited != 0.toByte() && wasVisited != 1.toByte()) {
                 throw java.lang.RuntimeException(
-                        "Places bug! Memory corruption possible! Report me!")
+                    "Places bug! Memory corruption possible! Report me!"
+                )
             }
             result.add(wasVisited == 1.toByte())
         }
@@ -353,7 +355,8 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
         val urlsJson = rustCallForString { error ->
             val incRemoteArg: Byte = if (includeRemote) { 1 } else { 0 }
             LibPlacesFFI.INSTANCE.places_get_visited_urls_in_range(
-                    this.handle.get(), start, end, incRemoteArg, error)
+                this.handle.get(), start, end, incRemoteArg, error
+            )
         }
         val arr = JSONArray(urlsJson)
         val result = mutableListOf<String>()
@@ -367,7 +370,8 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
         readQueryCounters.measure {
             val infoBuffer = rustCall { error ->
                 LibPlacesFFI.INSTANCE.places_get_visit_infos(
-                        this.handle.get(), start, end, visitTransitionSet(excludeTypes), error)
+                    this.handle.get(), start, end, visitTransitionSet(excludeTypes), error
+                )
             }
             try {
                 val infos = MsgTypes.HistoryVisitInfos.parseFrom(infoBuffer.asCodedInputStream()!!)
@@ -381,7 +385,8 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
     override fun getVisitPage(offset: Long, count: Long, excludeTypes: List<VisitType>): List<VisitInfo> {
         val infoBuffer = rustCall { error ->
             LibPlacesFFI.INSTANCE.places_get_visit_page(
-                    this.handle.get(), offset, count, visitTransitionSet(excludeTypes), error)
+                this.handle.get(), offset, count, visitTransitionSet(excludeTypes), error
+            )
         }
         try {
             val infos = MsgTypes.HistoryVisitInfos.parseFrom(infoBuffer.asCodedInputStream()!!)
@@ -399,7 +404,8 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
     ): VisitInfosWithBound {
         val infoBuffer = rustCall { error ->
             LibPlacesFFI.INSTANCE.places_get_visit_page_with_bound(
-                    this.handle.get(), offset, bound, count, visitTransitionSet(excludeTypes), error)
+                this.handle.get(), offset, bound, count, visitTransitionSet(excludeTypes), error
+            )
         }
         try {
             val infos = MsgTypes.HistoryVisitInfosWithBound.parseFrom(infoBuffer.asCodedInputStream()!!)
@@ -412,7 +418,8 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
     override fun getVisitCount(excludeTypes: List<VisitType>): Long {
         return rustCall { error ->
             LibPlacesFFI.INSTANCE.places_get_visit_count(
-                    this.handle.get(), visitTransitionSet(excludeTypes), error)
+                this.handle.get(), visitTransitionSet(excludeTypes), error
+            )
         }
     }
 
@@ -552,10 +559,10 @@ fun visitTransitionSet(l: List<VisitType>): Int {
  * This class is thread safe.
  */
 class PlacesWriterConnection internal constructor(connHandle: Long, api: PlacesApi) :
-        PlacesReaderConnection(connHandle),
-        WritableHistoryConnection,
-        WritableHistoryMetadataConnection,
-        WritableBookmarksConnection {
+    PlacesReaderConnection(connHandle),
+    WritableHistoryConnection,
+    WritableHistoryMetadataConnection,
+    WritableBookmarksConnection {
     // The reference to our PlacesAPI. Mostly used to know how to handle getting closed.
     val apiRef = WeakReference(api)
     override fun noteObservation(data: VisitObservation) {
@@ -571,7 +578,8 @@ class PlacesWriterConnection internal constructor(connHandle: Long, api: PlacesA
         return writeQueryCounters.measure {
             rustCall { error ->
                 LibPlacesFFI.INSTANCE.places_delete_visits_for(
-                    this.handle.get(), url, error)
+                    this.handle.get(), url, error
+                )
             }
         }
     }
@@ -580,7 +588,8 @@ class PlacesWriterConnection internal constructor(connHandle: Long, api: PlacesA
         return writeQueryCounters.measure {
             rustCall { error ->
                 LibPlacesFFI.INSTANCE.places_delete_visit(
-                        this.handle.get(), url, visitTimestamp, error)
+                    this.handle.get(), url, visitTimestamp, error
+                )
             }
         }
     }
@@ -593,7 +602,8 @@ class PlacesWriterConnection internal constructor(connHandle: Long, api: PlacesA
         return writeQueryCounters.measure {
             rustCall { error ->
                 LibPlacesFFI.INSTANCE.places_delete_visits_between(
-                    this.handle.get(), startTime, endTime, error)
+                    this.handle.get(), startTime, endTime, error
+                )
             }
         }
     }
@@ -698,25 +708,25 @@ class PlacesWriterConnection internal constructor(connHandle: Long, api: PlacesA
 
     override fun createFolder(parentGUID: String, title: String, position: Int?): String {
         val builder = MsgTypes.BookmarkNode.newBuilder()
-                .setNodeType(BookmarkType.Folder.value)
-                .setParentGuid(parentGUID)
-                .setTitle(title)
+            .setNodeType(BookmarkType.Folder.value)
+            .setParentGuid(parentGUID)
+            .setTitle(title)
         return this.doInsert(builder, position)
     }
 
     override fun createSeparator(parentGUID: String, position: Int?): String {
         val builder = MsgTypes.BookmarkNode.newBuilder()
-                .setNodeType(BookmarkType.Separator.value)
-                .setParentGuid(parentGUID)
+            .setNodeType(BookmarkType.Separator.value)
+            .setParentGuid(parentGUID)
         return this.doInsert(builder, position)
     }
 
     override fun createBookmarkItem(parentGUID: String, url: String, title: String, position: Int?): String {
         val builder = MsgTypes.BookmarkNode.newBuilder()
-                .setNodeType(BookmarkType.Bookmark.value)
-                .setParentGuid(parentGUID)
-                .setUrl(url)
-                .setTitle(title)
+            .setNodeType(BookmarkType.Bookmark.value)
+            .setParentGuid(parentGUID)
+            .setUrl(url)
+            .setTitle(title)
         return this.doInsert(builder, position)
     }
 
@@ -734,7 +744,8 @@ class PlacesWriterConnection internal constructor(connHandle: Long, api: PlacesA
     override fun acceptResult(searchString: String, url: String) {
         rustCall { error ->
             LibPlacesFFI.INSTANCE.places_accept_result(
-                    this.handle.get(), searchString, url, error)
+                this.handle.get(), searchString, url, error
+            )
         }
     }
 
@@ -1393,11 +1404,13 @@ data class VisitInfo(
     companion object {
         internal fun fromMessage(msg: MsgTypes.HistoryVisitInfos): List<VisitInfo> {
             return msg.infosList.map {
-                VisitInfo(url = it.url,
+                VisitInfo(
+                    url = it.url,
                     title = it.title,
                     visitTime = it.timestamp,
                     visitType = intToVisitType[it.visitType]!!,
-                    isHidden = it.isHidden)
+                    isHidden = it.isHidden
+                )
             }
         }
     }
