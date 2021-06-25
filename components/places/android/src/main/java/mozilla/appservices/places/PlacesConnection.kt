@@ -417,24 +417,32 @@ open class PlacesReaderConnection internal constructor(connHandle: Long) :
     }
 
     override suspend fun getLatestHistoryMetadataForUrl(url: String): HistoryMetadata? {
-        return mozilla.appservices.places.uniffi.placesGetLatestHistoryMetadataForUrl(this.handle.get(), url)
+        return rustCallUniffi(this) {
+            mozilla.appservices.places.uniffi.placesGetLatestHistoryMetadataForUrl(this.handle.get(), url)
+        }
     }
 
     override suspend fun getHistoryMetadataSince(since: Long): List<HistoryMetadata> {
         readQueryCounters.measure {
-            return mozilla.appservices.places.uniffi.placesGetHistoryMetadataSince(this.handle.get(), since)
+            return rustCallUniffi(this) {
+                mozilla.appservices.places.uniffi.placesGetHistoryMetadataSince(this.handle.get(), since)
+            }
         }
     }
 
     override suspend fun getHistoryMetadataBetween(start: Long, end: Long): List<HistoryMetadata> {
         readQueryCounters.measure {
-            return mozilla.appservices.places.uniffi.placesGetHistoryMetadataBetween(this.handle.get(), start, end)
+            return rustCallUniffi(this) {
+                mozilla.appservices.places.uniffi.placesGetHistoryMetadataBetween(this.handle.get(), start, end)
+            }
         }
     }
 
     override suspend fun queryHistoryMetadata(query: String, limit: Long): List<HistoryMetadata> {
         readQueryCounters.measure {
-            return mozilla.appservices.places.uniffi.placesQueryHistoryMetadata(this.handle.get(), query, limit)
+            return rustCallUniffi(this) {
+                mozilla.appservices.places.uniffi.placesQueryHistoryMetadata(this.handle.get(), query, limit)
+            }
         }
     }
 
