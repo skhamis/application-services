@@ -32,7 +32,7 @@ impl PushManager {
             Store::open_in_memory()?
         };
         let uaid = store.get_meta("uaid")?;
-        let pm = Self {
+        Ok(Self {
             config: config.clone(),
             conn: connect(config, uaid, store.get_meta("auth")?)?,
             store,
@@ -41,8 +41,7 @@ impl PushManager {
                 UPDATE_RATE_LIMITER_INTERVAL,
                 UPDATE_RATE_LIMITER_MAX_CALLS,
             ),
-        };
-        Ok(pm)
+        })
     }
 
     // XXX: make these trait methods
@@ -101,19 +100,19 @@ impl PushManager {
     }
 
     // XXX: maybe -> Result<()> instead
-    pub fn unsubscribe(&self, channel_id: Option<&str>) -> Result<bool> {
+    pub fn unsubscribe(&mut self, channel_id: Option<&str>) -> Result<bool> {
         if self.conn.uaid.is_none() {
             return Err(ErrorKind::GeneralError("No subscriptions created yet.".into()).into());
         }
-        let uaid = self.conn.uaid.as_ref().unwrap();
+        let uaid = self.conn.uaid.as_ref().unwrap().to_owned();
         Ok(if let Some(chid) = channel_id {
-            self.conn.unsubscribe(channel_id)? && self.store.delete_record(uaid, chid)?
+            self.conn.unsubscribe(channel_id)? && self.store.delete_record(&uaid, chid)?
         } else {
             false
         })
     }
 
-    pub fn unsubscribe_all(&self) -> Result<bool> {
+    pub fn unsubscribe_all(&mut self) -> Result<bool> {
         if self.conn.uaid.is_none() {
             return Err(ErrorKind::GeneralError("No subscriptions created yet.".into()).into());
         }
@@ -142,7 +141,8 @@ impl PushManager {
             .conn
             .uaid
             .as_ref()
-            .ok_or_else(|| ErrorKind::GeneralError("No subscriptions created yet.".into()))?;
+            .ok_or_else(|| ErrorKind::GeneralError("No subscriptions created yet.".into()))?
+            .to_owned();
 
         let channels = self.store.get_channel_list(&uaid)?;
         if self.conn.verify_connection(&channels)? {
@@ -156,6 +156,12 @@ impl PushManager {
                 subscriptions.push(record);
             }
         }
+        // we wipe the UAID if there is a mismatch, forcing us to later
+        // re-generate a new one when we do the next first subscription.
+        // this is to prevent us from attempting to communicate with the server using an outdated
+        // UAID, the in-memory uaid was already wiped in the `verify_connection` call
+        // when we unsubscribe
+        self.store.delete_all_records(&uaid)?;
         Ok(subscriptions)
     }
 

@@ -65,7 +65,7 @@ pub trait Connection {
     ) -> error::Result<RegisterResponse>;
 
     /// Drop an endpoint
-    fn unsubscribe(&self, channel_id: Option<&str>) -> error::Result<bool>;
+    fn unsubscribe(&mut self, channel_id: Option<&str>) -> error::Result<bool>;
 
     /// Update the autopush server with the new native OS Messaging authorization token
     fn update(&mut self, new_token: &str) -> error::Result<bool>;
@@ -75,7 +75,7 @@ pub trait Connection {
 
     /// Verify that the known channel list matches up with the server list. If this fails, regenerate endpoints.
     /// This should be performed once a day.
-    fn verify_connection(&self, channels: &[String]) -> error::Result<bool>;
+    fn verify_connection(&mut self, channels: &[String]) -> error::Result<bool>;
 
     /// Add one or more new broadcast subscriptions.
     fn broadcast_subscribe(&self, broadcast: BroadcastValue) -> error::Result<BroadcastValue>;
@@ -248,7 +248,7 @@ impl Connection for ConnectHttp {
     }
 
     /// Drop a channel and stop receiving updates.
-    fn unsubscribe(&self, channel_id: Option<&str>) -> error::Result<bool> {
+    fn unsubscribe(&mut self, channel_id: Option<&str>) -> error::Result<bool> {
         if self.auth.is_none() {
             return Err(CommunicationError("Connection is unauthorized".into()).into());
         }
@@ -274,7 +274,12 @@ impl Connection for ConnectHttp {
             .headers(self.headers()?)
             .send()
         {
-            Ok(_) => Ok(true),
+            Ok(_) => {
+                if channel_id.is_none() {
+                    self.uaid = None;
+                }
+                Ok(true)
+            }
             Err(e) => Err(CommunicationServerError(format!("Could not unsubscribe: {}", e)).into()),
         }
     }
@@ -398,7 +403,7 @@ impl Connection for ConnectHttp {
     /// Verify that the server and client both have matching channel information. A "false"
     /// should force the client to drop the old UAID, request a new UAID from the server, and
     /// resubscribe all channels, resulting in new endpoints.
-    fn verify_connection(&self, channels: &[String]) -> error::Result<bool> {
+    fn verify_connection(&mut self, channels: &[String]) -> error::Result<bool> {
         if self.auth.is_none() {
             return Err(CommunicationError("Connection uninitiated".to_owned()).into());
         }
@@ -516,7 +521,7 @@ mod test {
             .with_header("content-type", "application/json")
             .with_body("{}")
             .create();
-            let conn = connect(
+            let mut conn = connect(
                 config.clone(),
                 Some(DUMMY_UAID.to_owned()),
                 Some(SECRET.to_owned()),
@@ -537,7 +542,7 @@ mod test {
             .with_header("content-type", "application/json")
             .with_body("{}")
             .create();
-            let conn = connect(
+            let mut conn = connect(
                 config.clone(),
                 Some(DUMMY_UAID.to_owned()),
                 Some(SECRET.to_owned()),
