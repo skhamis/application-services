@@ -54,8 +54,8 @@ impl Add for MigrationMetrics {
     type Output = MigrationMetrics;
     fn add(self, rhs: MigrationMetrics) -> MigrationMetrics {
         MigrationMetrics {
-            insert_phase: self.insert_phase + rhs.insert_phase,
-            fixup_phase: self.fixup_phase + rhs.fixup_phase,
+            insert_phase: Default::default(),
+            fixup_phase: Default::default(),
             num_processed: self.num_processed + rhs.num_processed,
             num_succeeded: self.num_succeeded + rhs.num_succeeded,
             num_failed: self.num_failed + rhs.num_failed,
@@ -487,25 +487,12 @@ fn insert_logins(migration_plan: &MigrationPlan, store: &LoginStore) -> Result<M
     let mut all_errors = Vec::new();
     all_errors.extend(insert_errors.clone());
     let metrics = MigrationMetrics {
-        fixup_phase: MigrationPhaseMetrics {
-            num_processed: 0,
-            num_succeeded: 0,
-            num_failed: 0,
-            total_duration: 0,
-            errors: Vec::new(),
-        },
-        insert_phase: MigrationPhaseMetrics {
-            num_processed: import_start_total_logins,
-            num_succeeded: import_start_total_logins - num_failed_insert,
-            num_failed: num_failed_insert,
-            total_duration: insert_phase_duration.as_millis() as u64,
-            errors: insert_errors,
-        },
         num_processed: import_start_total_logins,
         num_succeeded: import_start_total_logins - num_failed_insert,
         num_failed: num_failed_insert,
         total_duration: insert_phase_duration.as_millis() as u64,
         errors: all_errors,
+        ..Default::default()
     };
     log::info!(
         "Finished importing logins with the following metrics: {:#?}",
