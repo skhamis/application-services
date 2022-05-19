@@ -4,6 +4,7 @@
 
 use crate::error::*;
 use crate::storage::{ClientRemoteTabs, RemoteTab, TabsStorage};
+use crate::sync;
 use crate::sync::engine::TabsEngine;
 use interrupt_support::NeverInterrupts;
 use std::cell::RefCell;
@@ -31,7 +32,6 @@ pub fn get_registered_sync_engine(engine_id: &SyncEngineId) -> Option<Box<dyn Sy
         },
     }
 }
-
 pub struct TabsStore {
     pub storage: Mutex<TabsStorage>,
 }
@@ -129,6 +129,15 @@ impl TabsStore {
     pub fn register_with_sync_manager(self: Arc<Self>) {
         let mut state = STORE_FOR_MANAGER.lock().unwrap();
         *state = Arc::downgrade(&self);
+    }
+
+    // Returns a bridged sync engine for Desktop for this store.
+    //pub fn bridged_engine(self: Arc<Self>) -> sync::TabsBridgedEngine {
+    // pub fn bridged_engine(self: Arc<Self>) -> sync::BridgedEngine {
+    pub fn bridged_engine(self: Arc<Self>) -> sync::BridgedEngine {
+        //let engine = TabsEngine::new(Arc::clone(&self));
+        // sync::BridgedEngine::new(engine)
+        sync::BridgedEngine::new(self)
     }
 }
 

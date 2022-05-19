@@ -76,7 +76,7 @@ impl ClientRemoteTabs {
 pub struct TabsEngine {
     pub store: Arc<TabsStore>,
     remote_clients: RefCell<HashMap<String, RemoteClient>>,
-    last_sync: Cell<Option<ServerTimestamp>>, // We use a cell because `sync_finished` doesn't take a mutable reference to &self.
+    pub(crate) last_sync: Cell<Option<ServerTimestamp>>, // We use a cell because `sync_finished` doesn't take a mutable reference to &self.
     sync_store_assoc: RefCell<EngineSyncAssociation>,
     pub(crate) local_id: RefCell<String>,
 }

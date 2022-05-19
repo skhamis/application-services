@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+use sync15_traits::bridged_engine;
+
 #[derive(Debug, thiserror::Error)]
 pub enum TabsError {
     #[error("Error synchronizing: {0}")]
@@ -24,6 +26,9 @@ pub enum TabsError {
 
     #[error("Error opening database: {0}")]
     OpenDatabaseError(#[from] sql_support::open_database::Error),
+
+    #[error("{0}")]
+    IncomingPayloadError(#[from] bridged_engine::PayloadError),
 }
 
 pub type Result<T> = std::result::Result<T, TabsError>;

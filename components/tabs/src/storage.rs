@@ -14,6 +14,7 @@ use serde_derive::{Deserialize, Serialize};
 use sql_support::open_database::{self, open_database_with_flags};
 use sql_support::ConnExt;
 use std::cell::RefCell;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
 pub type TabsDeviceType = crate::DeviceType;
@@ -63,7 +64,7 @@ fn devicetype_is_unknown(val: &DeviceType) -> bool {
 // no remote tabs in an existing DB is also a normal situation)
 pub struct TabsStorage {
     local_tabs: RefCell<Option<Vec<RemoteTab>>>,
-    db_path: PathBuf,
+    pub db_path: PathBuf,
     db_connection: Option<Connection>,
 }
 
@@ -213,6 +214,14 @@ impl TabsStorage {
 
     pub(crate) fn wipe_local_tabs(&self) {
         self.local_tabs.replace(None);
+    }
+}
+
+impl Deref for TabsStorage {
+    type Target = Connection;
+
+    fn deref(&self) -> &Self::Target {
+        self.db_connection.as_ref().unwrap()
     }
 }
 
