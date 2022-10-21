@@ -131,15 +131,7 @@ impl TabsSyncImpl {
             }
             let id = record.id.clone();
             let crt = if let Some(remote_client) = self.remote_clients.get(&id) {
-                ClientRemoteTabs::from_record_with_remote_client(
-                    remote_client
-                        .fxa_device_id
-                        .as_ref()
-                        .unwrap_or(&id)
-                        .to_owned(),
-                    remote_client,
-                    record,
-                )
+                ClientRemoteTabs::from_record_with_remote_client(id, remote_client, record)
             } else {
                 // A record with a device that's not in our remote clients seems unlikely, but
                 // could happen - in most cases though, it will be due to a disconnected client -
