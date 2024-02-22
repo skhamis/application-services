@@ -1005,6 +1005,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "device_commands"
+version = "0.1.0"
+dependencies = [
+ "fxa-client",
+ "tabs",
+ "uniffi",
+]
+
+[[package]]
 name = "difference"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4207,6 +4216,8 @@ dependencies = [
  "interrupt-support",
  "lazy_static",
  "log",
+ "once_cell",
+ "parking_lot",
  "rusqlite",
  "serde",
  "serde_derive",

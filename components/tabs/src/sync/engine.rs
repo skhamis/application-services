@@ -123,14 +123,14 @@ impl TabsEngine {
     }
 
     pub fn set_last_sync(&self, last_sync: ServerTimestamp) -> Result<()> {
-        let mut storage = self.store.storage.lock().unwrap();
+        let mut storage = self.store.storage.lock();
         log::debug!("Updating last sync to {}", last_sync);
         let last_sync_millis = last_sync.as_millis();
         Ok(storage.put_meta(schema::LAST_SYNC_META_KEY, &last_sync_millis)?)
     }
 
     pub fn get_last_sync(&self) -> Result<Option<ServerTimestamp>> {
-        let mut storage = self.store.storage.lock().unwrap();
+        let mut storage = self.store.storage.lock();
         let millis = storage.get_meta::<i64>(schema::LAST_SYNC_META_KEY)?;
         Ok(millis.map(ServerTimestamp))
     }
@@ -142,7 +142,7 @@ impl SyncEngine for TabsEngine {
     }
 
     fn prepare_for_sync(&self, get_client_data: &dyn Fn() -> ClientData) -> Result<()> {
-        let mut storage = self.store.storage.lock().unwrap();
+        let mut storage = self.store.storage.lock();
         // We only know the client list at sync time, but need to return tabs potentially
         // at any time -- so we store the clients in the meta table to be able to properly
         // return a ClientRemoteTab struct
@@ -184,7 +184,7 @@ impl SyncEngine for TabsEngine {
             remote_tabs.push((record, modified));
         }
         telem.incoming(incoming_telemetry);
-        let mut storage = self.store.storage.lock().unwrap();
+        let mut storage = self.store.storage.lock();
         // In desktop we might end up here with zero records when doing a quick-write, in
         // which case we don't want to wipe the DB.
         if !remote_tabs.is_empty() {
@@ -201,7 +201,7 @@ impl SyncEngine for TabsEngine {
     ) -> Result<Vec<OutgoingBso>> {
         // We've already applied them - really we just need to fetch outgoing.
         let (local_tabs, remote_clients) = {
-            let mut storage = self.store.storage.lock().unwrap();
+            let mut storage = self.store.storage.lock();
             let local_tabs = storage.prepare_local_tabs_for_upload();
             let remote_clients: HashMap<String, RemoteClient> = {
                 match storage.get_meta::<String>(schema::REMOTE_CLIENTS_KEY)? {
@@ -270,7 +270,7 @@ impl SyncEngine for TabsEngine {
 
     fn reset(&self, assoc: &EngineSyncAssociation) -> Result<()> {
         self.set_last_sync(ServerTimestamp(0))?;
-        let mut storage = self.store.storage.lock().unwrap();
+        let mut storage = self.store.storage.lock();
         storage.delete_meta(schema::REMOTE_CLIENTS_KEY)?;
         storage.wipe_remote_tabs()?;
         match assoc {
@@ -290,12 +290,12 @@ impl SyncEngine for TabsEngine {
         self.reset(&EngineSyncAssociation::Disconnected)?;
         // not clear why we need to wipe the local tabs - the app is just going
         // to re-add them?
-        self.store.storage.lock().unwrap().wipe_local_tabs();
+        self.store.storage.lock().wipe_local_tabs();
         Ok(())
     }
 
     fn get_sync_assoc(&self) -> Result<EngineSyncAssociation> {
-        let mut storage = self.store.storage.lock().unwrap();
+        let mut storage = self.store.storage.lock();
         let global = storage.get_meta::<String>(schema::GLOBAL_SYNCID_META_KEY)?;
         let coll = storage.get_meta::<String>(schema::COLLECTION_SYNCID_META_KEY)?;
         Ok(if let (Some(global), Some(coll)) = (global, coll) {

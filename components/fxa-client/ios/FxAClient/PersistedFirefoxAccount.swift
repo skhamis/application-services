@@ -184,6 +184,12 @@ class PersistedFirefoxAccount {
         }
     }
 
+    public func closeRemoteTab(targetDeviceId: String, url: String) throws {
+        return try notifyAuthErrors {
+            try self.inner.closeRemoteTab(targetDeviceId: targetDeviceId, url: url)
+        }
+    }
+
     public func getTokenServerEndpointURL() throws -> URL {
         return try URL(string: inner.getTokenServerEndpointUrl())!
     }

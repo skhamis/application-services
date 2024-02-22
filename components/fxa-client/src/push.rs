@@ -100,6 +100,16 @@ impl FirefoxAccount {
             .lock()
             .send_single_tab(target_device_id, title, url)
     }
+
+    // Test #1: Just keeping it in FxA
+    #[handle_error(Error)]
+    pub fn close_remote_tab(&self, target_device_id: &str, url: &str) -> ApiResult<()> {
+        self.internal
+            .lock()
+            .close_remote_tab(target_device_id, url)
+    }
+
+
 }
 
 /// Details of a web-push subscription endpoint.

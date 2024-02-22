@@ -27,7 +27,7 @@ pub const COMMAND_NAME: &str = "https://identity.mozilla.com/cmd/open-uri";
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EncryptedSendTabPayload {
     /// URL Safe Base 64 encrypted send-tab payload.
-    encrypted: String,
+    pub encrypted: String,
 }
 
 impl EncryptedSendTabPayload {
@@ -174,10 +174,10 @@ impl SendTabKeysPayload {
 pub struct PublicSendTabKeys {
     /// URL Safe Base 64 encoded push public key.
     #[serde(rename = "publicKey")]
-    public_key: String,
+    pub public_key: String,
     /// URL Safe Base 64 encoded auth secret.
     #[serde(rename = "authSecret")]
-    auth_secret: String,
+    pub auth_secret: String,
 }
 
 impl PublicSendTabKeys {

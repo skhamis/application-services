@@ -371,6 +371,10 @@ impl TabsStorage {
         }
         Ok(())
     }
+
+    pub(crate) fn do_some_db_work(&self) {
+        println!("Tabs Storage did some db work!");
+    }
 }
 
 // Trim the amount of tabs in a list to fit the specified memory size

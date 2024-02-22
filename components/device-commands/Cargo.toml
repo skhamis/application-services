@@ -1,0 +1,16 @@
+[package]
+name = "device_commands"
+edition = "2021"
+version = "0.1.0"
+authors = ["Sync Team <sync-team@mozilla.com>"]
+license = "MPL-2.0"
+exclude = ["/android", "/ios"]
+
+[dependencies]
+uniffi = { workspace = true }
+tabs = { path = "../tabs" }
+fxa-client = { path = "../fxa-client" }
+
+
+[build-dependencies]
+uniffi = { workspace = true, features = ["build"] }

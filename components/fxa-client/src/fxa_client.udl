@@ -525,6 +525,9 @@ interface FirefoxAccount {
   void send_single_tab([ByRef] string target_device_id, [ByRef] string title, [ByRef] string url );
   
 
+  [Throws=FxaError]
+  void close_remote_tab([ByRef] string target_device_id, [ByRef] string url);
+
   // Get the URL at which to access the user's sync data.
   //
   // **💾 This method alters the persisted account state.**

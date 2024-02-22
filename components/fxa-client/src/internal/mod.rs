@@ -31,6 +31,7 @@ mod push;
 mod scoped_keys;
 mod scopes;
 mod send_tab;
+mod remote_tab;
 mod state_manager;
 mod state_persistence;
 mod telemetry;

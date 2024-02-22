@@ -37,6 +37,7 @@ members = [
     "components/sync_manager",
     "components/sync15",
     "components/tabs",
+    "components/device-commands",
     "components/viaduct",
     "components/webext-storage",
     "components/webext-storage/ffi",

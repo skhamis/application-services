@@ -94,8 +94,9 @@ fi
 
 find_as_version() {
     # We can derive the version we need by looking at the project file.
-    number_string=$(grep -A 3 $'https://github.com/mozilla/rust-components-swift' "$SOURCE_ROOT/$PROJECT.xcodeproj/project.pbxproj" | grep -E -o "\d+\.\d+\.\d+")
-
+    #number_string=$(grep -A 3 $'https://github.com/mozilla/rust-components-swift' "$SOURCE_ROOT/$PROJECT.xcodeproj/project.pbxproj" | grep -E -o "\d+\.\d+\.\d+")
+    # nimbus not working with local testing, not gonna sus it out for now
+    number_string="125.0.2"
     if [ -z "$number_string" ]; then
         # If there is no rust-components then perhaps we're building with a local versions of rust_components, using rust_components_local.sh .
         # We try to resolve that, and find the version from the Package.swift file in that local directory.
